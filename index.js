@@ -14,13 +14,13 @@ client.on('messageCreate', async (message) => {
   if (message.author.bot || !message.content.startsWith('!cruelai')) return;
 
   const prompt = message.content.replace('!cruelai', '').trim();
-  if (!prompt) {
-    return message.reply('❗ Ask me something like `!cruelai how to bake a cake?`');
-  }
+  if (!prompt) return message.reply('❗ Ask me something like `!cruelai how to bake a cake?`');
+
+  await message.channel.sendTyping(); // 👈 ADD THIS LINE
 
   try {
     const res = await axios.post('https://openrouter.ai/api/v1/chat/completions', {
-      model: "deepseek/deepseek-r1-0528:free",  // ✅ Correct model name
+      model: "mistralai/mistral-7b-instruct:free", // 👈 your updated model
       messages: [
         { role: "system", content: "You are CruelAI, a clever and helpful Discord assistant." },
         { role: "user", content: prompt }
@@ -28,19 +28,19 @@ client.on('messageCreate', async (message) => {
     }, {
       headers: {
         "Authorization": `Bearer ${process.env.OPENROUTER_API_KEY}`,
-        "HTTP-Referer": "https://github.com/yourusername/cruelai-bot",  // ✅ Optional but good
-        "X-Title": "CruelAI",  // ✅ Optional, for OpenRouter ranking
+        "HTTP-Referer": "https://github.com/ZoidsGenesis/cruelai-bot",
+        "X-Title": "CruelAI",
         "Content-Type": "application/json"
       }
     });
 
     const reply = res.data.choices[0].message.content;
     message.reply(reply);
-
   } catch (err) {
-    console.error("❌ FULL ERROR:", err.response?.data || err.message || err);
-    message.reply("Error connecting to CruelAI brain 😵");
+    console.error("❌ API Error:", err.response?.data || err.message);
+    message.reply("CruelAI took too long or ran into an error 😵");
   }
 });
+
 
 client.login(process.env.DISCORD_TOKEN);
