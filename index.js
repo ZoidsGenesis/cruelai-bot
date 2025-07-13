@@ -27,7 +27,7 @@ client.on('messageCreate', async (message) => {
     const res = await axios.post('https://openrouter.ai/api/v1/chat/completions', {
       model: "mistralai/mistral-7b-instruct:free", // 👈 your updated model
       messages: [
-        { role: "system", content: "You are CruelAI, a clever and helpful Discord assistant." },
+        { role: "system", content: "You are CruelAI, a clever and helpful assistant. Always answer in a short, concise, and straight-to-the-point manner." },
         { role: "user", content: prompt }
       ]
     }, {
