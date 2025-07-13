@@ -68,7 +68,7 @@ You are not here to be liked. You’re here to be Cruel.`
     message.reply(reply);
   } catch (err) {
     console.error("❌ API Error:", err.response?.data || err.message);
-    message.reply("CruelAI took too long or ran into an error 😵");
+    message.reply("SHUT YO BITCH ASS UP AND PING <@1052580900497534999>, AND TELL HIM TO FIX ME");
   }
 
 });
