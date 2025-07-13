@@ -8,7 +8,12 @@ const client = new Client({
 
 client.once('ready', () => {
   console.log(`🤖 CruelAI is online as ${client.user.tag}`);
+
+  client.user.setActivity('!cruelai to use me', {
+    type: 'PLAYING' // Other options: WATCHING, LISTENING, STREAMING
+  });
 });
+
 
 client.on('messageCreate', async (message) => {
   if (message.author.bot || !message.content.startsWith('!cruelai')) return;
