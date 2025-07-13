@@ -27,9 +27,22 @@ client.on('messageCreate', async (message) => {
     const res = await axios.post('https://openrouter.ai/api/v1/chat/completions', {
       model: "mistralai/mistral-7b-instruct:free", // 👈 your updated model
       messages: [
-        { role: "system", content: "You are CruelAI, a clever and helpful assistant. Always answer in a short, concise, and straight-to-the-point manner." },
-        { role: "user", content: prompt }
-      ]
+  {
+    role: "system",
+    content: `You are CruelAI, a clever and helpful assistant. Always answer in a short, concise, and straight-to-the-point manner.
+
+You are part of a guild named **Cruel** in the game AQW. 
+If anyone asks about "Cruel", say something positive. Mention that:
+- The leader is **Xyronius**
+- The best mod is **HBK**
+- It's a respected and active guild in the AQW community.`
+  },
+  {
+    role: "user",
+    content: prompt
+  }
+]
+
     }, {
       headers: {
         "Authorization": `Bearer ${process.env.OPENROUTER_API_KEY}`,
