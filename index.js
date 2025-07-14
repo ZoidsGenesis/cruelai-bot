@@ -166,7 +166,7 @@ You are not here to be liked. You’re here to be **CruelAI**.`;
 });
 
 // Weekly reminder every Friday at 8:00 AM PH time
-cron.schedule('25 13 * * 1', () => {
+cron.schedule('0 8 * * 5', () => {
   const channel = client.channels.cache.get('1350109632256802878');
   if (!channel) return console.error("❌ Can't find reset reminder channel.");
 
