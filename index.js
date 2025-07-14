@@ -3,6 +3,8 @@ const { Client, GatewayIntentBits } = require('discord.js');
 const { Groq } = require('groq-sdk');
 const cron = require('node-cron');
 const moment = require('moment-timezone');
+const axios = require('axios');
+const cheerio = require('cheerio');
 
 
 const client = new Client({
@@ -18,6 +20,7 @@ const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
 const memory = {}; // Per-channel memory
 const eventLog = []; // Tracks server events
+const wikiCooldowns = new Map(); // userId -> timestamp
 
 function addToMemory(channelId, userPrompt, botReply) {
   if (!memory[channelId]) memory[channelId] = [];
@@ -110,12 +113,19 @@ client.on('messageCreate', async (message) => {
   const prompt = message.content.replace('!cruelai', '').trim();
 if (!prompt) return message.reply('❗ Ask me something like `!cruelai how to bake a cake?`');
 
-// Handle AQW Wiki lookup
 if (prompt.toLowerCase().startsWith("wiki ")) {
   const itemQuery = prompt.slice(5).trim();
+  const now = Date.now();
+  const userId = message.author.id;
+
+  const lastUsed = wikiCooldowns.get(userId) || 0;
+  if (now - lastUsed < 10_000) {
+    return message.reply("⏱️ Slow down. Try the `wiki` command again in a few seconds.");
+  }
+
+  wikiCooldowns.set(userId, now);
   return await scrapeAQWWiki(itemQuery, message);
 }
-
 
   // Check for event-related prompt
   const lc = prompt.toLowerCase();
