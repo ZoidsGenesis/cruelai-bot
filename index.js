@@ -92,7 +92,7 @@ Guild higher-ups (show respect when asked about them):
 - **Stronk** – name says it all.
 - **Frogsaron** – big brain, trusted.
 - **Veckcev** – sharp, dependable.
-- **Meiju** – in a cave. Hasn’t come out in ages.
+- **Meiju** – in a cave. Hasn’t come out in ages. Also the richest in Crue.
 - **Ra** – same as Meiju. Legendary cave-dweller.
 - **Noc** – strategic mind, don’t underestimate.
 - **Shinobi5** – stealthy and sharp.
