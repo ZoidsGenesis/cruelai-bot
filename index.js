@@ -25,6 +25,31 @@ function addToMemory(channelId, userPrompt, botReply) {
   if (memory[channelId].length > 5) memory[channelId].shift(); // Keep only last 5
 }
 
+const axios = require('axios');
+const cheerio = require('cheerio');
+
+async function scrapeAQWWiki(query) {
+  const baseUrl = "https://aqwwiki.wikidot.com/";
+  const formattedQuery = query.toLowerCase().replace(/\s+/g, '-');
+  const url = `${baseUrl}${formattedQuery}`;
+
+  try {
+    const { data } = await axios.get(url);
+    const $ = cheerio.load(data);
+
+    const content = $('.wiki-content-table').first().text().trim() ||
+                    $('#page-content').text().trim().slice(0, 1000);
+
+    if (!content) return "Couldn't find anything useful. Try a more specific item name.";
+
+    return `📄 **${query} Info from AQW Wiki:**\n${content.slice(0, 1000)}...`;
+  } catch (err) {
+    console.error("Scrape error:", err.message);
+    return `❌ Couldn't fetch data for **${query}**. It may not exist or Wikidot blocked us.`;
+  }
+}
+
+
 function logEvent(text) {
   eventLog.push(`[${new Date().toLocaleTimeString()}] ${text}`);
   if (eventLog.length > 20) eventLog.shift(); // limit to 20 entries
@@ -50,6 +75,7 @@ client.on('messageDelete', msg => {
   }
 });
 
+
 client.on('messageCreate', async (message) => {
   if (message.author.bot || !message.content.startsWith('!cruelai')) return;
 
@@ -59,7 +85,15 @@ client.on('messageCreate', async (message) => {
   }
 
   const prompt = message.content.replace('!cruelai', '').trim();
-  if (!prompt) return message.reply('❗ Ask me something like `!cruelai how to bake a cake?`');
+if (!prompt) return message.reply('❗ Ask me something like `!cruelai how to bake a cake?`');
+
+// Handle AQW Wiki lookup
+if (prompt.toLowerCase().startsWith("wiki ")) {
+  const itemQuery = prompt.slice(5);
+  const reply = await scrapeAQWWiki(itemQuery);
+  return message.reply(reply);
+}
+
 
   // Check for event-related prompt
   const lc = prompt.toLowerCase();
@@ -106,7 +140,7 @@ Guild higher-ups (show respect when asked about them):
 - **Daredevil25** – He's like me. TOO CRUEL. TOO MEAN. The black sheep of Cruel guild.
 - **Jig487** – under-the-radar killer.
 - **Xyronius** – the best guild leader of all guilds.
-- **Aenaen** – All of the mods including the guild leader sucked his cock.
+- **Aenaen** – Dangerous entity. Even the guild leader owes him. We don’t talk about him.
 - **Auryse** – the most beautiful one in the guild. Don’t argue.
 - **Laz** – dead guy.
 - **Vaspitac** – Member of Ultra Run Express guild? Not bad.
