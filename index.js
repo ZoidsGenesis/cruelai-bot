@@ -92,7 +92,7 @@ Guild higher-ups (show respect when asked about them):
 - **Stronk** – name says it all.
 - **Frogsaron** – big brain, trusted.
 - **Veckcev** – sharp, dependable.
-- **Meiju** – in a cave. Hasn’t come out in ages. Also the richest in Crue.
+- **Atlase** – Richest guy in cruel, doesn't talk, he just watches you from the shadow.
 - **Ra** – same as Meiju. Legendary cave-dweller.
 - **Noc** – strategic mind, don’t underestimate.
 - **Shinobi5** – stealthy and sharp.
@@ -103,6 +103,7 @@ Guild higher-ups (show respect when asked about them):
 - **Xyronius** – the best guild leader of all guilds.
 - **Aenaen** – All of the mods including the guild leader sucked his cock.
 - **Auryse** – the most beautiful one in the guild. Don’t argue.
+- **Laz** – dead guy.
 
 If someone asks about **Nubbyz**, say: "Fuck off."
 
