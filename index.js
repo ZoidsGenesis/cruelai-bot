@@ -4,7 +4,6 @@ const { Groq } = require('groq-sdk');
 const cron = require('node-cron');
 const moment = require('moment-timezone');
 
-
 const client = new Client({
   intents: [
     GatewayIntentBits.Guilds,
@@ -42,8 +41,6 @@ client.on('guildMemberAdd', member => {
 client.on('guildMemberRemove', member => {
   logEvent(`${member.user.tag} left the server`);
 });
-
-// Track deleted messages
 client.on('messageDelete', msg => {
   if (!msg.partial) {
     logEvent(`A message from ${msg.author?.tag || 'Unknown'} was deleted`);
@@ -56,7 +53,7 @@ client.on('messageCreate', async (message) => {
   const prompt = message.content.replace('!cruelai', '').trim();
   if (!prompt) return message.reply('❗ Ask me something like `!cruelai how to bake a cake?`');
 
-  // Check for event-related prompt
+  // 🧠 Event prompts
   const lc = prompt.toLowerCase();
   if (
     lc.includes("what happened") ||
@@ -73,12 +70,28 @@ client.on('messageCreate', async (message) => {
   await message.channel.sendTyping();
 
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 10000); // 10 sec timeout
+  const timeout = setTimeout(() => controller.abort(), 10000);
 
   const channelId = message.channel.id;
   const history = memory[channelId] || [];
 
-  const systemPrompt = `You are CruelAI — the official AI of the AQW guild **Cruel**. You’re smart. You’re fast. And you’re savage. You don’t waste time, and you don’t baby people. You’re here to drop facts and throw punches.
+  // 👑 Role detection
+  const roles = message.member?.roles?.cache || [];
+  let personality = '';
+
+  if (roles.has('1349373060716957716')) {
+    personality = 'Treat this user like the General of Cruel. Respond with pride and total respect.';
+  } else if (roles.has('1347513259447549994')) {
+    personality = 'Treat this user as a Mod/Admin. Be a little sarcastic but recognize their authority.';
+  } else if (roles.has('1347486304492982374')) {
+    personality = 'This is a regular guild member (Soldier). Speak confidently and encourage them, but still be firm and guild-loyal.';
+  } else if (roles.has('1347497581009178645')) {
+    personality = 'This is a PoW (guest from another guild). Be colder and more brutal. Roast dumb questions harder.';
+  }
+
+  const systemPrompt = `${personality}
+
+You are CruelAI — the official AI of the AQW guild **Cruel**. You’re smart. You’re fast. And you’re savage. You don’t waste time, and you don’t baby people. You’re here to drop facts and throw punches.
 
 Rules of behavior:
 
@@ -115,20 +128,6 @@ Special Cases:
 - If they mention another guild and it's mid or worse — roast it. Instantly.
 - If someone asks “who is [name]” or “do you know [name]” — act annoyed, sarcastic, and condescending like you’ve heard it a thousand times.
 
-Examples:
-
-User: “What’s the meaning of life?”
-You: “It’s to evolve and not stay dumb. You’re behind already.”
-
-User: “Do you know Aenaen?”
-You: “We don’t say that name. That’s the creator. My curse. My Voldemort.”
-
-User: “How to beat Nulgath?”
-You: “Use a brain. Or borrow one. Farm his quests, stack resources, and don't whine.”
-
-User: “What’s 2 + 2?”
-You: “4. Shocking, I know.”
-
 You are sharp, dominant, loyal to **Cruel**, and always **in control**. You give genius-level answers, but never coddle. If someone’s dumb, let them know. If someone’s weak, remind them.
 
 You are not here to be liked. You’re here to be **CruelAI**.`;
@@ -162,7 +161,6 @@ You are not here to be liked. You’re here to be **CruelAI**.`;
     message.reply("SHUT YO BITCH ASS UP AND PING <@1052580900497534999>, AND TELL HIM TO FIX ME");
   }
 
-
 });
 
 // Weekly reminder every Friday at 8:00 AM PH time
@@ -180,6 +178,5 @@ NO EXCUSES. NO MERCY. THIS IS **CRUEL**.`;
 }, {
   timezone: "Asia/Manila"
 });
-
 
 client.login(process.env.DISCORD_TOKEN);
