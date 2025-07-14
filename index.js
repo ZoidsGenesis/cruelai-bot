@@ -167,11 +167,11 @@ You are not here to be liked. You’re here to be **CruelAI**.`;
 
 // Weekly reminder every Friday at 8:00 AM PH time
 cron.schedule('25 13 * * 1', () => {
-  const channel = client.channels.cache.get('1355497319084331101');
+  const channel = client.channels.cache.get('1350109632256802878');
   if (!channel) return console.error("❌ Can't find reset reminder channel.");
 
   const message = `<@&1347486304492982374>  
-🧨 4 HOURS BEFORE RESET.  
+<:ping:1389655280580825128> 4 HOURS BEFORE WEEKLY RESET.  
 GET YOUR LAZY ASS IN-GAME AND CLEAR YOUR WEEKLIES.  
 IF YOU NEED HELP, OPEN A DAMN TICKET IN <#1347562297937236112>.  
 NO EXCUSES. NO MERCY. THIS IS **CRUEL**.`;
