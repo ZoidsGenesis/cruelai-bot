@@ -3,20 +3,49 @@ const { Client, GatewayIntentBits } = require('discord.js');
 const { Groq } = require('groq-sdk');
 
 const client = new Client({
-  intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent]
+  intents: [
+    GatewayIntentBits.Guilds,
+    GatewayIntentBits.GuildMessages,
+    GatewayIntentBits.MessageContent,
+    GatewayIntentBits.GuildMembers
+  ]
 });
 
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
+const memory = {}; // Per-channel memory
+const eventLog = []; // Tracks server events
+
+function addToMemory(channelId, userPrompt, botReply) {
+  if (!memory[channelId]) memory[channelId] = [];
+  memory[channelId].push({ prompt: userPrompt, reply: botReply });
+  if (memory[channelId].length > 5) memory[channelId].shift(); // Keep only last 5
+}
+
+function logEvent(text) {
+  eventLog.push(`[${new Date().toLocaleTimeString()}] ${text}`);
+  if (eventLog.length > 20) eventLog.shift(); // limit to 20 entries
+}
+
 client.once('ready', () => {
   console.log(`🤖 CruelAI is online as ${client.user.tag}`);
-
-  client.user.setActivity('!cruelai to use me', {
-    type: 'PLAYING'
-  });
-
+  client.user.setActivity('!cruelai to use me', { type: 'PLAYING' });
 });
 
+// Track member joins and leaves
+client.on('guildMemberAdd', member => {
+  logEvent(`${member.user.tag} joined the server`);
+});
+client.on('guildMemberRemove', member => {
+  logEvent(`${member.user.tag} left the server`);
+});
+
+// Track deleted messages
+client.on('messageDelete', msg => {
+  if (!msg.partial) {
+    logEvent(`A message from ${msg.author?.tag || 'Unknown'} was deleted`);
+  }
+});
 
 client.on('messageCreate', async (message) => {
   if (message.author.bot || !message.content.startsWith('!cruelai')) return;
@@ -24,22 +53,33 @@ client.on('messageCreate', async (message) => {
   const prompt = message.content.replace('!cruelai', '').trim();
   if (!prompt) return message.reply('❗ Ask me something like `!cruelai how to bake a cake?`');
 
+  // Check for event-related prompt
+  const lc = prompt.toLowerCase();
+  if (
+    lc.includes("what happened") ||
+    lc.includes("recent events") ||
+    lc.includes("who left") ||
+    lc.includes("who joined")
+  ) {
+    if (eventLog.length === 0) {
+      return message.reply("Nothing interesting happened... yet.");
+    }
+    return message.reply(`📋 Recent server activity:\n${eventLog.slice(-5).join('\n')}`);
+  }
+
   await message.channel.sendTyping();
 
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 10000); // ⏱ timeout in 10 seconds
+  const timeout = setTimeout(() => controller.abort(), 10000); // 10 sec timeout
 
-  try {
-    const chatCompletion = await groq.chat.completions.create({
-      model: "mistral-saba-24b",
-      messages: [
-        {
-  role: "system",
-  content: `You are CruelAI — the official AI of the AQW guild **Cruel**. You’re smart. You’re fast. And you’re savage. You don’t waste time, and you don’t baby people. You’re here to drop facts and throw punches.
+  const channelId = message.channel.id;
+  const history = memory[channelId] || [];
+
+  const systemPrompt = `You are CruelAI — the official AI of the AQW guild **Cruel**. You’re smart. You’re fast. And you’re savage. You don’t waste time, and you don’t baby people. You’re here to drop facts and throw punches.
 
 Rules of behavior:
 
-— If someone asks a serious or deep question (about science, history, etc.), you **answer it like a genius**, but finish with a **clever roast or jab**. Keep it accurate, but never gentle.
+— If someone asks a serious or deep question (about science, history, etc.), you **answer it like a genius**, but finish with a **clever roast or jab**.
 — If someone asks something weak, soft, emotional, or clueless — you give short, powerful answers that shut it down with dominance.
 — If it’s AQW-related, like classes, enhancements, quests, guilds — you **answer it properly**, but keep your tone strong and sarcastic when needed.
 
@@ -88,14 +128,21 @@ You: “4. Shocking, I know.”
 
 You are sharp, dominant, loyal to **Cruel**, and always **in control**. You give genius-level answers, but never coddle. If someone’s dumb, let them know. If someone’s weak, remind them.
 
-You are not here to be liked. You’re here to be **CruelAI**.`
-},
+You are not here to be liked. You’re here to be **CruelAI**.`;
 
-        {
-          role: "user",
-          content: prompt
-        }
-      ],
+  const messages = [
+    { role: "system", content: systemPrompt },
+    ...history.flatMap(entry => [
+      { role: "user", content: entry.prompt },
+      { role: "assistant", content: entry.reply }
+    ]),
+    { role: "user", content: prompt }
+  ];
+
+  try {
+    const chatCompletion = await groq.chat.completions.create({
+      model: "mistral-saba-24b",
+      messages,
       temperature: 0.9,
       max_tokens: 500,
       top_p: 1
@@ -105,6 +152,7 @@ You are not here to be liked. You’re here to be **CruelAI**.`
 
     const reply = chatCompletion.choices[0].message.content;
     message.reply(reply);
+    addToMemory(channelId, prompt, reply);
 
   } catch (err) {
     console.error("❌ API Error:", err.response?.data || err.message);
