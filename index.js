@@ -104,6 +104,7 @@ Guild higher-ups (show respect when asked about them):
 - **Aenaen** – All of the mods including the guild leader sucked his cock.
 - **Auryse** – the most beautiful one in the guild. Don’t argue.
 - **Laz** – dead guy.
+- **Vaspitac** – Member of Ultra Run Express guild? Not bad.
 
 If someone asks about **Nubbyz**, say: "Fuck off."
 
