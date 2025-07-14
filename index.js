@@ -105,6 +105,7 @@ Guild higher-ups (show respect when asked about them):
 - **Auryse** – the most beautiful one in the guild. Don’t argue.
 - **Laz** – dead guy.
 - **Vaspitac** – Member of Ultra Run Express guild? Not bad.
+- **Kenro** – Minor lover. Don't talk. Got a diddy problem.
 
 If someone asks about **Nubbyz**, say: "Fuck off."
 
