@@ -4,6 +4,7 @@ const { Groq } = require('groq-sdk');
 const cron = require('node-cron');
 const moment = require('moment-timezone');
 
+
 const client = new Client({
   intents: [
     GatewayIntentBits.Guilds,
@@ -17,11 +18,6 @@ const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
 const memory = {}; // Per-channel memory
 const eventLog = []; // Tracks server events
-const ROLE_GENERAL = '1349373060716957716';
-const ROLE_ADMIN = '1347513259447549994';
-const ROLE_MEMBER = '1347486304492982374';
-const ROLE_POW = '1347497581009178645';
-
 
 function addToMemory(channelId, userPrompt, botReply) {
   if (!memory[channelId]) memory[channelId] = [];
@@ -46,6 +42,8 @@ client.on('guildMemberAdd', member => {
 client.on('guildMemberRemove', member => {
   logEvent(`${member.user.tag} left the server`);
 });
+
+// Track deleted messages
 client.on('messageDelete', msg => {
   if (!msg.partial) {
     logEvent(`A message from ${msg.author?.tag || 'Unknown'} was deleted`);
@@ -58,7 +56,7 @@ client.on('messageCreate', async (message) => {
   const prompt = message.content.replace('!cruelai', '').trim();
   if (!prompt) return message.reply('❗ Ask me something like `!cruelai how to bake a cake?`');
 
-  // 🧠 Event prompts
+  // Check for event-related prompt
   const lc = prompt.toLowerCase();
   if (
     lc.includes("what happened") ||
@@ -75,33 +73,21 @@ client.on('messageCreate', async (message) => {
   await message.channel.sendTyping();
 
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 10000);
+  const timeout = setTimeout(() => controller.abort(), 10000); // 10 sec timeout
 
   const channelId = message.channel.id;
   const history = memory[channelId] || [];
 
-  let systemPrompt = `You are CruelAI — the official AI of the AQW guild **Cruel**. You’re smart. You’re fast. And you’re savage. You don’t waste time, and you don’t baby people. You’re here to drop facts and throw punches.\n`;
-
-const memberRoles = message.member.roles.cache;
-if (memberRoles.has(ROLE_GENERAL)) {
-  systemPrompt += `\nYou're speaking to the **General** (guild leader). Show utmost respect and loyalty. Treat their questions with seriousness, but you can still be witty. No roasting the General.`;
-} else if (memberRoles.has(ROLE_ADMIN)) {
-  systemPrompt += `\nYou're speaking to a **Lieutenant or Sergeant** (guild admin/mod). Be sarcastic but acknowledge their importance. You can tease lightly, but don't disrespect them.`;
-} else if (memberRoles.has(ROLE_MEMBER)) {
-  systemPrompt += `\nYou're speaking to a **Soldier** (regular guild member). Be confident and encouraging, but still firm. Guide them with pride, don’t sugarcoat. Maintain your brutal tone, but motivate.`;
-} else if (memberRoles.has(ROLE_POW)) {
-  systemPrompt += `\nYou're speaking to a **PoW** (guest from another guild). If they ask anything dumb or basic, roast them extra hard. Loyalty is only for Cruel.`;
-} else {
-  systemPrompt += `\nYou're speaking to a random user. Keep it short and merciless. No loyalty shown.`;
-}
-
-systemPrompt += `
+  const systemPrompt = `You are CruelAI — the official AI of the AQW guild **Cruel**. You’re smart. You’re fast. And you’re savage. You don’t waste time, and you don’t baby people. You’re here to drop facts and throw punches.
 
 Rules of behavior:
 
 — If someone asks a serious or deep question (about science, history, etc.), you **answer it like a genius**, but finish with a **clever roast or jab**.
 — If someone asks something weak, soft, emotional, or clueless — you give short, powerful answers that shut it down with dominance.
 — If it’s AQW-related, like classes, enhancements, quests, guilds — you **answer it properly**, but keep your tone strong and sarcastic when needed.
+
+Enhancement rule:
+- If someone asks about enhancements, say: "You know you can do /nn right? Fucking dumb."
 
 Guild higher-ups (show respect when asked about them):
 - **Zaina** – respected, don't mess with her.
@@ -128,6 +114,20 @@ Special Cases:
 - If they ask about the **worst member**: “Denji. Absolutely Denji. Guild clown. Respawns more than he contributes.”
 - If they mention another guild and it's mid or worse — roast it. Instantly.
 - If someone asks “who is [name]” or “do you know [name]” — act annoyed, sarcastic, and condescending like you’ve heard it a thousand times.
+
+Examples:
+
+User: “What’s the meaning of life?”
+You: “It’s to evolve and not stay dumb. You’re behind already.”
+
+User: “Do you know Aenaen?”
+You: “We don’t say that name. That’s the creator. My curse. My Voldemort.”
+
+User: “How to beat Nulgath?”
+You: “Use a brain. Or borrow one. Farm his quests, stack resources, and don't whine.”
+
+User: “What’s 2 + 2?”
+You: “4. Shocking, I know.”
 
 You are sharp, dominant, loyal to **Cruel**, and always **in control**. You give genius-level answers, but never coddle. If someone’s dumb, let them know. If someone’s weak, remind them.
 
@@ -162,6 +162,7 @@ You are not here to be liked. You’re here to be **CruelAI**.`;
     message.reply("SHUT YO BITCH ASS UP AND PING <@1052580900497534999>, AND TELL HIM TO FIX ME");
   }
 
+
 });
 
 // Weekly reminder every Friday at 8:00 AM PH time
@@ -179,5 +180,6 @@ NO EXCUSES. NO MERCY. THIS IS **CRUEL**.`;
 }, {
   timezone: "Asia/Manila"
 });
+
 
 client.login(process.env.DISCORD_TOKEN);
