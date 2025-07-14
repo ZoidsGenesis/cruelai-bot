@@ -25,10 +25,7 @@ function addToMemory(channelId, userPrompt, botReply) {
   if (memory[channelId].length > 5) memory[channelId].shift(); // Keep only last 5
 }
 
-const axios = require('axios');
-const cheerio = require('cheerio');
-
-async function scrapeAQWWiki(query) {
+async function scrapeAQWWiki(query, message) {
   const baseUrl = "https://aqwwiki.wikidot.com/";
   const formattedQuery = query.toLowerCase().replace(/\s+/g, '-');
   const url = `${baseUrl}${formattedQuery}`;
@@ -40,12 +37,38 @@ async function scrapeAQWWiki(query) {
     const content = $('.wiki-content-table').first().text().trim() ||
                     $('#page-content').text().trim().slice(0, 1000);
 
-    if (!content) return "Couldn't find anything useful. Try a more specific item name.";
+    if (!content) {
+      return message.reply({
+        embeds: [{
+          color: 0xff0000,
+          title: `❌ Couldn't find info for "${query}"`,
+          description: "Try a more specific name or check spelling.",
+        }]
+      });
+    }
 
-    return `📄 **${query} Info from AQW Wiki:**\n${content.slice(0, 1000)}...`;
+    const embed = {
+      color: 0x990000, // dark red
+      title: `📘 ${query} — AQW Wiki`,
+      url: url,
+      description: content.slice(0, 1000) + "...",
+      footer: {
+        text: 'CruelAI - Sourced from AQWWiki',
+        icon_url: 'https://aqwwiki.wikidot.com/local--favicon/favicon.gif' // optional
+      }
+    };
+
+    return message.reply({ embeds: [embed] });
+
   } catch (err) {
     console.error("Scrape error:", err.message);
-    return `❌ Couldn't fetch data for **${query}**. It may not exist or Wikidot blocked us.`;
+    return message.reply({
+      embeds: [{
+        color: 0xff0000,
+        title: `❌ Error fetching "${query}"`,
+        description: "It may not exist, or the wiki blocked us temporarily.",
+      }]
+    });
   }
 }
 
@@ -89,9 +112,8 @@ if (!prompt) return message.reply('❗ Ask me something like `!cruelai how to ba
 
 // Handle AQW Wiki lookup
 if (prompt.toLowerCase().startsWith("wiki ")) {
-  const itemQuery = prompt.slice(5);
-  const reply = await scrapeAQWWiki(itemQuery);
-  return message.reply(reply);
+  const itemQuery = prompt.slice(5).trim();
+  return await scrapeAQWWiki(itemQuery, message);
 }
 
 
