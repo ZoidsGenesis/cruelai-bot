@@ -55,7 +55,7 @@ client.on('messageCreate', async (message) => {
 
   const allowedChannels = ['1394256143769014343', '1349520048087236670'];
   if (!allowedChannels.includes(message.channel.id)) {
-    return message.reply(`CANT YOU SEE MY HANDS ARE TIED? TALK TO ME IN <#${allowedChannels[0]}> YOU FUCKER.`);
+    return message.reply(`CAN'T YOU SEE MY HANDS ARE TIED? TALK TO ME IN <#${allowedChannels[0]}> YOU FUCKER.`);
   }
 
   const prompt = message.content.replace('!cruelai', '').trim();
