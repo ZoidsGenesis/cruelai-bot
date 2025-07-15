@@ -227,7 +227,6 @@ You are not here to be liked. You’re here to be **CruelAI**.`;
 ];
 
 const lowerPrompt = prompt.toLowerCase();
-let wikiData = null;
 
 if (
   lowerPrompt.includes("aqw") ||
@@ -236,17 +235,24 @@ if (
   lowerPrompt.includes("where to get") ||
   lowerPrompt.includes("drop")
 ) {
-  wikiData = await getAQWWikiSummary(prompt);
+  const wikiData = await getAQWWikiSummary(prompt);
+  if (wikiData) {
+    const embed = {
+      color: 0x990000,
+      title: `📘 ${prompt} — AQW Wiki`,
+      url: wikiData.url,
+      description: wikiData.summary.slice(0, 1000) + "...",
+      footer: {
+        text: 'CruelAI - Sourced from AQWWiki',
+        icon_url: 'https://aqwwiki.wikidot.com/local--favicon/favicon.gif'
+      }
+    };
+
+    console.log(`[AQW Wiki Mode] Sent wiki info for: ${prompt}`);
+    return message.reply({ embeds: [embed] });
+  }
 }
 
-if (wikiData) {
-  messages.push({
-  role: "system",
-  content: `You must answer **only using this AQW Wiki info** from ${wikiData.url}.\n\n${wikiData.summary}\n\nDo not make up anything. If the info isn't here, say so.`
-});
-
-
-}
 
 // Add memory
 messages.push(
