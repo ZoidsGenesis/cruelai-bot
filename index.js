@@ -104,13 +104,18 @@ client.once('ready', () => {
 
 // Create slash commands
 const commands = [
-  new SlashCommandBuilder()
-    .setName('cruelwiki')
-    .setDescription('Search the AQW Wiki')
-    .addStringOption(option =>
-      option.setName('query')
-        .setDescription('What to search for')
-        .setRequired(true))
+  {
+    name: 'cruelwiki',
+    description: 'Search the AQW Wiki',
+    options: [
+      {
+        name: 'query',
+        description: 'What to search for',
+        type: 3,
+        required: true
+      }
+    ]
+  }
 ];
 
 // Register slash commands
@@ -118,12 +123,12 @@ const rest = new REST({ version: '10' }).setToken(process.env.DISCORD_TOKEN);
 
 (async () => {
   try {
-    console.log('Started refreshing application (/) commands.');
+    console.log('Started refreshing guild (/) commands.');
     await rest.put(
-      Routes.applicationCommands(process.env.CLIENT_ID),
+      Routes.applicationGuildCommands(process.env.CLIENT_ID, process.env.GUILD_ID),
       { body: commands },
     );
-    console.log('Successfully reloaded application (/) commands.');
+    console.log('Successfully reloaded guild (/) commands.');
   } catch (error) {
     console.error(error);
   }
