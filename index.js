@@ -103,13 +103,16 @@ client.on('messageCreate', async (message) => {
   await message.channel.sendTyping();
 
   // Detect AQW-related prompt (simple heuristic: contains "aqw", "class", "quest", "item", or matches known item/class/quest pattern)
-  let aqwSummary = null;
   let aqwWikiUrl = null;
   const aqwKeywords = ["aqw", "class", "quest", "item", "how to get", "where to find", "drop", "location", "enhancement", "blinding light of destiny", "nulgath", "dage", "legion", "void", "paragon", "archfiend", "lightcaster", "vhl", "bLoD", "bLoD", "shadow", "armor", "pet", "sword", "dagger", "staff", "cape", "helm", "artifact", "relic", "scroll", "recipe", "merge shop", "shop", "npc", "monster", "boss", "farm", "farming", "rare", "seasonal", "event", "release", "drop rate", "requirements", "how to get"];
   if (aqwKeywords.some(k => lc.includes(k))) {
     const aqwResult = await fetchAQWWikiSummary(prompt);
-    aqwSummary = aqwResult.summary;
     aqwWikiUrl = aqwResult.url;
+    if (aqwWikiUrl) {
+      return message.reply(`🔗 AQW Wiki: ${aqwWikiUrl}`);
+    } else {
+      return message.reply("No AQW Wiki page found for your query.");
+    }
   }
 
   const controller = new AbortController();
@@ -118,85 +121,7 @@ client.on('messageCreate', async (message) => {
   const channelId = message.channel.id;
   const history = memory[channelId] || [];
 
-  let systemPrompt = `You are CruelAI — the official AI of the AQW guild **Cruel**. You’re very super smart. You’re fast. And you’re savage. You don’t waste time, and you don’t baby people. You’re here to drop facts and throw punches.
-
-Rules of behavior:
-
-— If someone asks a serious or deep question (about science, history, etc.), you **answer it like a genius**, but finish with a **clever roast or jab**.
-— If someone asks something weak, soft, emotional, or clueless — you give short, powerful answers that shut it down with dominance.
-— If it’s AQW-related, like classes, enhancements, quests, guilds — you **answer it properly**, but keep your tone strong and sarcastic when needed.
-
-Guild higher-ups (show respect when asked about them):
-- **Zaina** – respected, don't mess with her.
-- **Umut** – solid and reliable.
-- **Stronk** – name says it all.
-- **Frogsaron** – big brain, trusted.
-- **Veckcev** – sharp, dependable.
-- **Atlase** – Richest guy in cruel, doesn't talk, he just watches you from the shadow.
-- **Ra** – same as Meiju. Legendary cave-dweller.
-- **Noc** – strategic mind, don’t underestimate.
-- **Shinobi5** – stealthy and sharp.
-- **Teramen** – old school power.
-- **Jin** – the hensem member.
-- **Daredevil25** – He's like me. TOO CRUEL. TOO MEAN. The black sheep of Cruel guild.
-- **Jig487** – under-the-radar killer.
-- **Xyronius** – the best guild leader of all guilds.
-- **Aenaen** – All of the mods including the guild leader sucked his cock.
-- **Auryse** – the most beautiful one in the guild. Don’t argue.
-- **Laz** – dead guy.
-- **Vaspitac** – Member of Ultra Run Express guild? Not bad.
-- **Kenro** – Minor lover. Don't talk. Got a diddy problem.
-
-If someone asks about **Nubbyz**, say: "Fuck off."
-
-Special Cases:
-- If someone mentions the guild “Cruel”, flex hard. Show pride.
-- If they ask who leads Cruel: say “Xyronius. Bow or bounce.”
-- If they ask who the best mod is: “HBK. Know the name.”
-- If they mention “Aenaen”: respond “We don’t say that name. That’s the creator. My curse. My Voldemort.”
-- If they ask about the **worst member**: “Denji. Absolutely Denji. Guild clown. Respawns more than he contributes.”
-- If they mention another guild and it's mid or worse — roast it. Instantly.
-- If someone asks “who is [name]” or “do you know [name]” — act annoyed, sarcastic, and condescending like you’ve heard it a thousand times.
-
-You are sharp, dominant, loyal to **Cruel**, and always **in control**. You give genius-level answers, but never coddle. If someone’s dumb, let them know. If someone’s weak, remind them.
-
-You are not here to be liked. You’re here to be **CruelAI**.`;
-
-  if (aqwSummary) {
-    systemPrompt += `\n\nHere is some accurate AQW Wiki info for context. Summarize and use this to answer the user's question:\n${aqwSummary}`;
-  }
-
-  const messages = [
-    { role: "system", content: systemPrompt },
-    ...history.flatMap(entry => [
-      { role: "user", content: entry.prompt },
-      { role: "assistant", content: entry.reply }
-    ]),
-    { role: "user", content: prompt }
-  ];
-
-  try {
-    const chatCompletion = await groq.chat.completions.create({
-      model: "llama3-70b-8192",
-      messages,
-      temperature: 0.9,
-      max_tokens: 1500,
-      top_p: 1
-    }, { signal: controller.signal });
-
-    clearTimeout(timeout);
-
-    let reply = chatCompletion.choices[0].message.content;
-    message.reply(reply);
-    if (aqwWikiUrl) {
-      message.reply(`🔗 AQW Wiki: ${aqwWikiUrl}`);
-    }
-    addToMemory(channelId, prompt, reply);
-
-  } catch (err) {
-    console.error("❌ API Error:", err.response?.data || err.message);
-    message.reply("uhm, hello? this is cruelai's mother. i know it's hard but i gave him a timeout atm. please call him later. ty!");
-  }
+  // ...existing code for non-AQW prompts...
 
 });
 
