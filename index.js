@@ -213,22 +213,34 @@ You are sharp, dominant, loyal to **Cruel**, and always **in control**. You give
 
 You are not here to be liked. You’re here to be **CruelAI**.`;
 
-  let contextInjection = '';
-if (prompt.toLowerCase().includes("aqw") || prompt.toLowerCase().includes("enhance") || prompt.toLowerCase().includes("class") || prompt.toLowerCase().includes("where to get") || prompt.toLowerCase().includes("drop")) {
-  const wikiData = await getAQWWikiSummary(prompt);
-  if (wikiData) {
-    contextInjection = `\n\n[Context from AQW Wiki: "${wikiData.url}"]\n${wikiData.summary}`;
-  }
-}
-
-const messages = [
-  { role: "system", content: systemPrompt + contextInjection },
+  const messages = [
+  { role: "system", content: systemPrompt },
   ...history.flatMap(entry => [
     { role: "user", content: entry.prompt },
     { role: "assistant", content: entry.reply }
-  ]),
-  { role: "user", content: prompt }
+  ])
 ];
+
+// Check for AQW context
+if (
+  prompt.toLowerCase().includes("aqw") ||
+  prompt.toLowerCase().includes("enhance") ||
+  prompt.toLowerCase().includes("class") ||
+  prompt.toLowerCase().includes("where to get") ||
+  prompt.toLowerCase().includes("drop")
+) {
+  const wikiData = await getAQWWikiSummary(prompt);
+  if (wikiData) {
+    messages.push({
+      role: "user",
+      content: `Here is relevant AQW Wiki info from [${wikiData.url}]:\n${wikiData.summary}`
+    });
+  }
+}
+
+// Finally, push the actual user question
+messages.push({ role: "user", content: prompt });
+
 
 
   try {
