@@ -7,13 +7,13 @@ const axios = require('axios');
 const cheerio = require('cheerio');
 // Utility: Fetch and summarize AQW Wiki page
 async function fetchAQWWikiSummary(query) {
-  // Format query for AQW Wiki search
-  const searchUrl = `https://aqwwiki.wikidot.com/search:site/q/${encodeURIComponent(query)}`;
+  // Format query for AQW Wiki's Google Custom Search
+  const searchUrl = `http://aqwwiki.wikidot.com/search:main/q/${encodeURIComponent(query)}`;
   try {
     // Search page: get first result link
     const searchRes = await axios.get(searchUrl);
     const $ = cheerio.load(searchRes.data);
-    const firstResult = $('.search-results .title a').attr('href');
+    const firstResult = $('.search-results .item .title a').first().attr('href');
     if (!firstResult) return { summary: null, url: null };
     const wikiUrl = firstResult.startsWith('http') ? firstResult : `https://aqwwiki.wikidot.com${firstResult}`;
     // Fetch the actual wiki page
