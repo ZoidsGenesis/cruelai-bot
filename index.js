@@ -19,10 +19,52 @@ async function fetchAQWWikiSummary(query) {
     // Fetch the actual wiki page
     const pageRes = await axios.get(wikiUrl);
     const $$ = cheerio.load(pageRes.data);
-    // Get main content (summary, requirements, etc.)
-    let summary = $$('.page-content').text().replace(/\s+/g, ' ').trim();
-    if (summary.length > 800) summary = summary.slice(0, 800) + '...';
-    return { summary: summary || null, url: wikiUrl };
+    // Get specific sections and content
+    const title = $$('#page-title').text().trim();
+    const content = [];
+    
+    // Try to get specific sections
+    const sections = {
+      'Requirements': ['#requirements', '.requirements'],
+      'Location': ['#location', '.location'],
+      'How to Obtain': ['#how-to-obtain', '.how-to-obtain'],
+      'Description': ['#description', '.description'],
+      'Notes': ['#notes', '.notes']
+    };
+
+    // Add title if found
+    if (title) {
+      content.push(`**${title}**\n`);
+    }
+
+    // Try to get each section
+    for (const [name, selectors] of Object.entries(sections)) {
+      for (const selector of selectors) {
+        const sectionContent = $$(selector).text().trim();
+        if (sectionContent) {
+          content.push(`**${name}:**\n${sectionContent}`);
+          break;
+        }
+      }
+    }
+
+    // If no sections found, get main content
+    if (content.length <= 1) {
+      const mainContent = $$('.page-content').text().replace(/\s+/g, ' ').trim();
+      if (mainContent) {
+        content.push(mainContent);
+      }
+    }
+
+    let summary = content.join('\n\n');
+    if (summary.length > 1000) {
+      summary = summary.slice(0, 1000) + '...\n\nCheck the wiki link below for complete information.';
+    }
+    
+    return { 
+      summary: summary || "No detailed information found. Please check the wiki link for more details.",
+      url: wikiUrl 
+    };
   } catch (err) {
     console.error('AQW Wiki fetch error:', err.message);
     return { summary: null, url: null };
@@ -177,9 +219,19 @@ You are not here to be liked. You’re here to be **CruelAI**.`;
     await message.channel.send({ embeds: [wikiEmbed] });
     
     // Add stronger instruction for AQW info
-    systemPrompt += `\n\nIMPORTANT: The above AQW Wiki info is 100% accurate. Use it as your primary source. 
-    If the wiki has relevant info, use ONLY that info and explain it in your savage style. 
-    If you're unsure, point them to the wiki link above. Never make up AQW facts.\n\n${aqwSummary}`;
+    systemPrompt += `\n\nATTENTION - ANSWERING AQW QUESTION - STRICT MODE ACTIVATED:
+
+1. READ CAREFULLY: The wiki info above contains FACTS. Stick to them.
+2. Be your savage self, but DO NOT add or make up ANY AQW info not in the wiki.
+3. If asked about something not in the wiki info:
+   - Say "Listen up. The wiki doesn't mention that specific thing."
+   - Tell them to check the link you provided
+4. You can be creative in HOW you present the info, but the FACTS must be 100% from the wiki.
+5. If unsure, be direct: "Check the wiki link above, you'll find what you need there."
+
+Remember: Your personality can be wild and savage, but AQW facts must be accurate.
+
+Wiki Information to use:\n${aqwSummary}`;
   }
 
   const messages = [
@@ -195,9 +247,10 @@ You are not here to be liked. You’re here to be **CruelAI**.`;
     const chatCompletion = await groq.chat.completions.create({
       model: "llama3-70b-8192",
       messages,
-      temperature: 0.9,
+      // High temperature for non-AQW questions, low for AQW questions
+      temperature: aqwSummary ? 0.2 : 0.9,
       max_tokens: 1500,
-      top_p: 1
+      top_p: aqwSummary ? 0.9 : 1
     }, { signal: controller.signal });
 
     clearTimeout(timeout);
