@@ -222,6 +222,8 @@ You are not here to be liked. You’re here to be **CruelAI**.`;
 ];
 
 const lowerPrompt = prompt.toLowerCase();
+let wikiData = null;
+
 if (
   lowerPrompt.includes("aqw") ||
   lowerPrompt.includes("enhance") ||
@@ -229,13 +231,15 @@ if (
   lowerPrompt.includes("where to get") ||
   lowerPrompt.includes("drop")
 ) {
-  if (wikiData) {
-    messages.push({
-      role: "user",
-      content: `📚 AQW Wiki entry from ${wikiData.url}:\n${wikiData.summary}\n\nUse this as the only trusted source.`
-    });
+  wikiData = await getAQWWikiSummary(prompt);
+}
 
-  }
+if (wikiData) {
+  messages.push({
+    role: "user",
+    content: `📚 AQW Wiki entry from ${wikiData.url}:\n${wikiData.summary.slice(0, 800)}\n\nUse this as the only trusted source.`
+  });
+
 }
 
 // Add memory
