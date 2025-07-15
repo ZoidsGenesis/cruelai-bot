@@ -165,9 +165,14 @@ client.on('messageCreate', async (message) => {
       }
       
       await message.channel.send({ embeds: [wikiEmbed] });
+      return;
+    } else {
+      // If wiki search failed, inform the user instead of falling back to AI
+      return message.reply("Listen here, I couldn't find that on the AQW Wiki. Either you typed it wrong or it doesn't exist. Try being more specific, or check the wiki yourself: http://aqwwiki.wikidot.com/");
     }
   }
 
+  // Continue with AI response for non-AQW queries
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 10000); // 10 sec timeout
 
@@ -229,7 +234,7 @@ You are not here to be liked. You’re here to be **CruelAI**.`;
 
   try {
     const chatCompletion = await groq.chat.completions.create({
-      model: "mistral-saba-24b",
+      model: "mistral-saba-24",
       messages,
       temperature: 0.9,
       max_tokens: 500,
