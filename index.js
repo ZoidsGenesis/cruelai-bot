@@ -5,6 +5,28 @@ const cron = require('node-cron');
 const moment = require('moment-timezone');
 const axios = require('axios');
 const cheerio = require('cheerio');
+// Utility: Fetch and summarize AQW Wiki page
+async function fetchAQWWikiSummary(query) {
+  // Format query for AQW Wiki search
+  const searchUrl = `https://aqwwiki.wikidot.com/search:site/q/${encodeURIComponent(query)}`;
+  try {
+    // Search page: get first result link
+    const searchRes = await axios.get(searchUrl);
+    const $ = cheerio.load(searchRes.data);
+    const firstResult = $('.search-results .title a').attr('href');
+    if (!firstResult) return null;
+    // Fetch the actual wiki page
+    const pageRes = await axios.get(firstResult.startsWith('http') ? firstResult : `https://aqwwiki.wikidot.com${firstResult}`);
+    const $$ = cheerio.load(pageRes.data);
+    // Get main content (summary, requirements, etc.)
+    let summary = $$('.page-content').text().replace(/\s+/g, ' ').trim();
+    if (summary.length > 800) summary = summary.slice(0, 800) + '...';
+    return summary || null;
+  } catch (err) {
+    console.error('AQW Wiki fetch error:', err.message);
+    return null;
+  }
+}
 
 
 const client = new Client({
@@ -20,61 +42,12 @@ const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
 const memory = {}; // Per-channel memory
 const eventLog = []; // Tracks server events
-const wikiCooldowns = new Map(); // userId -> timestamp
 
 function addToMemory(channelId, userPrompt, botReply) {
   if (!memory[channelId]) memory[channelId] = [];
   memory[channelId].push({ prompt: userPrompt, reply: botReply });
   if (memory[channelId].length > 5) memory[channelId].shift(); // Keep only last 5
 }
-
-async function scrapeAQWWiki(query, message) {
-  const baseUrl = "https://aqwwiki.wikidot.com/";
-  const formattedQuery = query.toLowerCase().replace(/\s+/g, '-');
-  const url = `${baseUrl}${formattedQuery}`;
-
-  try {
-    const { data } = await axios.get(url);
-    const $ = cheerio.load(data);
-
-    const content = $('.wiki-content-table').first().text().trim() ||
-                    $('#page-content').text().trim().slice(0, 1000);
-
-    if (!content) {
-      return message.reply({
-        embeds: [{
-          color: 0xff0000,
-          title: `❌ Couldn't find info for "${query}"`,
-          description: "Try a more specific name or check spelling.",
-        }]
-      });
-    }
-
-    const embed = {
-      color: 0x990000, // dark red
-      title: `📘 ${query} — AQW Wiki`,
-      url: url,
-      description: content.slice(0, 1000) + "...",
-      footer: {
-        text: 'CruelAI - Sourced from AQWWiki',
-        icon_url: 'https://aqwwiki.wikidot.com/local--favicon/favicon.gif' // optional
-      }
-    };
-
-    return message.reply({ embeds: [embed] });
-
-  } catch (err) {
-    console.error("Scrape error:", err.message);
-    return message.reply({
-      embeds: [{
-        color: 0xff0000,
-        title: `❌ Error fetching "${query}"`,
-        description: "It may not exist, or the wiki blocked us temporarily.",
-      }]
-    });
-  }
-}
-
 
 function logEvent(text) {
   eventLog.push(`[${new Date().toLocaleTimeString()}] ${text}`);
@@ -101,67 +74,16 @@ client.on('messageDelete', msg => {
   }
 });
 
-async function getAQWWikiSummary(prompt) {
-  const baseSearchUrl = "http://aqwwiki.wikidot.com/search:site/q/";
-  const query = encodeURIComponent(prompt.trim());
-  const searchUrl = `${baseSearchUrl}${query}`;
-
-  try {
-    const { data: searchHtml } = await axios.get(searchUrl);
-    const $search = cheerio.load(searchHtml);
-
-    // Find the first result link
-    const firstResultPath = $search('.search-results .item a').attr('href');
-    if (!firstResultPath) {
-      console.log("❌ No search results found.");
-      return null;
-    }
-
-    const wikiUrl = `http://aqwwiki.wikidot.com${firstResultPath}`;
-
-    // Now fetch the actual page
-    const { data: pageHtml } = await axios.get(wikiUrl);
-    const $page = cheerio.load(pageHtml);
-
-    const content = $('.wiki-content-table').first().text().trim() ||
-                    $('#page-content').text().trim();
-
-    return {
-      url: wikiUrl,
-      summary: content.slice(0, 800)
-    };
-
-  } catch (err) {
-    console.error("❌ Failed to fetch AQW Wiki info:", err.message);
-    return null;
-  }
-}
-
-
 client.on('messageCreate', async (message) => {
   if (message.author.bot || !message.content.startsWith('!cruelai')) return;
 
-  const allowedChannels = ['1394256143769014343', '1349520048087236670', '1355497319084331101'];
+  const allowedChannels = ['1394256143769014343', '1349520048087236670'];
   if (!allowedChannels.includes(message.channel.id)) {
     return message.reply(`CAN'T YOU SEE MY HANDS ARE TIED? TALK TO ME IN <#${allowedChannels[0]}> YOU FUCKER.`);
   }
 
   const prompt = message.content.replace('!cruelai', '').trim();
-if (!prompt) return message.reply('❗ Ask me something like `!cruelai how to bake a cake?`');
-
-if (prompt.toLowerCase().startsWith("wiki ")) {
-  const itemQuery = prompt.slice(5).trim();
-  const now = Date.now();
-  const userId = message.author.id;
-
-  const lastUsed = wikiCooldowns.get(userId) || 0;
-  if (now - lastUsed < 10_000) {
-    return message.reply("⏱️ Slow down. Try the `wiki` command again in a few seconds.");
-  }
-
-  wikiCooldowns.set(userId, now);
-  return await scrapeAQWWiki(itemQuery, message);
-}
+  if (!prompt) return message.reply('❗ Ask me something like `!cruelai how to bake a cake?`');
 
   // Check for event-related prompt
   const lc = prompt.toLowerCase();
@@ -179,23 +101,26 @@ if (prompt.toLowerCase().startsWith("wiki ")) {
 
   await message.channel.sendTyping();
 
+  // Detect AQW-related prompt (simple heuristic: contains "aqw", "class", "quest", "item", or matches known item/class/quest pattern)
+  let aqwSummary = null;
+  const aqwKeywords = ["aqw", "class", "quest", "item", "how to get", "where to find", "drop", "location", "enhancement", "blinding light of destiny", "nulgath", "dage", "legion", "void", "paragon", "archfiend", "lightcaster", "vhl", "bLoD", "bLoD", "shadow", "armor", "pet", "sword", "dagger", "staff", "cape", "helm", "artifact", "relic", "scroll", "recipe", "merge shop", "shop", "npc", "monster", "boss", "farm", "farming", "rare", "seasonal", "event", "release", "drop rate", "requirements", "how to get"];
+  if (aqwKeywords.some(k => lc.includes(k))) {
+    aqwSummary = await fetchAQWWikiSummary(prompt);
+  }
+
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 10000); // 10 sec timeout
 
   const channelId = message.channel.id;
   const history = memory[channelId] || [];
 
-  const systemPrompt = `You are CruelAI — the official AI of the AQW guild **Cruel**. You’re very super smart. You’re fast. And you’re savage. You don’t waste time, and you don’t baby people. You’re here to drop facts and throw punches.
-
-If AQW Wiki context is provided, only use that as your source. Do NOT invent map names, drop sources, or locations.
-
+  let systemPrompt = `You are CruelAI — the official AI of the AQW guild **Cruel**. You’re very super smart. You’re fast. And you’re savage. You don’t waste time, and you don’t baby people. You’re here to drop facts and throw punches.
 
 Rules of behavior:
 
 — If someone asks a serious or deep question (about science, history, etc.), you **answer it like a genius**, but finish with a **clever roast or jab**.
 — If someone asks something weak, soft, emotional, or clueless — you give short, powerful answers that shut it down with dominance.
 — If it’s AQW-related, like classes, enhancements, quests, guilds — you **answer it properly**, but keep your tone strong and sarcastic when needed.
-— The messages below are from the user. Read carefully and respond as **CruelAI**, but always make sure to answer the user's question. Never ignore the question.
 
 Guild higher-ups (show respect when asked about them):
 - **Zaina** – respected, don't mess with her.
@@ -212,12 +137,13 @@ Guild higher-ups (show respect when asked about them):
 - **Daredevil25** – He's like me. TOO CRUEL. TOO MEAN. The black sheep of Cruel guild.
 - **Jig487** – under-the-radar killer.
 - **Xyronius** – the best guild leader of all guilds.
-- **Aenaen** – Dangerous entity. Even the guild leader owes him. We don’t talk about him.
+- **Aenaen** – All of the mods including the guild leader sucked his cock.
 - **Auryse** – the most beautiful one in the guild. Don’t argue.
 - **Laz** – dead guy.
 - **Vaspitac** – Member of Ultra Run Express guild? Not bad.
 - **Kenro** – Minor lover. Don't talk. Got a diddy problem.
-- **Nubbyz** – Beautiful soul, but cruel to animals. PRETTY LITTLE NUBBYZ.
+
+If someone asks about **Nubbyz**, say: "Fuck off."
 
 Special Cases:
 - If someone mentions the guild “Cruel”, flex hard. Show pride.
@@ -232,58 +158,25 @@ You are sharp, dominant, loyal to **Cruel**, and always **in control**. You give
 
 You are not here to be liked. You’re here to be **CruelAI**.`;
 
-  const messages = [
-  { role: "system", content: systemPrompt },
-];
-
-const lowerPrompt = prompt.toLowerCase();
-
-if (
-  lowerPrompt.includes("aqw") ||
-  lowerPrompt.includes("enhance") ||
-  lowerPrompt.includes("class") ||
-  lowerPrompt.includes("where to get") ||
-  lowerPrompt.includes("drop")
-) {
-  const wikiData = await getAQWWikiSummary(prompt);
-  if (wikiData) {
-    const embed = {
-      color: 0x990000,
-      title: `📘 ${prompt} — AQW Wiki`,
-      url: wikiData.url,
-      description: wikiData.summary.slice(0, 1000) + "...",
-      footer: {
-        text: 'CruelAI - Sourced from AQWWiki',
-        icon_url: 'https://aqwwiki.wikidot.com/local--favicon/favicon.gif'
-      }
-    };
-
-    console.log(`[AQW Wiki Mode] Sent wiki info for: ${prompt}`);
-    return message.reply({ embeds: [embed] });
+  if (aqwSummary) {
+    systemPrompt += `\n\nHere is some accurate AQW Wiki info for context. Summarize and use this to answer the user's question:\n${aqwSummary}`;
   }
-}
 
-
-// Add memory
-messages.push(
-  ...history.flatMap(entry => [
-    { role: "user", content: entry.prompt },
-    { role: "assistant", content: entry.reply }
-  ])
-);
-
-// Add final user prompt (this was missing!)
-messages.push({
-  role: "user",
-  content: prompt
-});
+  const messages = [
+    { role: "system", content: systemPrompt },
+    ...history.flatMap(entry => [
+      { role: "user", content: entry.prompt },
+      { role: "assistant", content: entry.reply }
+    ]),
+    { role: "user", content: prompt }
+  ];
 
   try {
     const chatCompletion = await groq.chat.completions.create({
-      model: "meta-llama/llama-4-scout-17b-16e-instruct",
+      model: "mistral-saba-24b",
       messages,
       temperature: 0.9,
-      max_tokens: 1024,
+      max_tokens: 500,
       top_p: 1
     }, { signal: controller.signal });
 
@@ -297,7 +190,6 @@ messages.push({
     console.error("❌ API Error:", err.response?.data || err.message);
     message.reply("uhm, hello? this is cruelai's mother. i know it's hard but i gave him a timeout atm. please call him later. ty!");
   }
-
 
 });
 
