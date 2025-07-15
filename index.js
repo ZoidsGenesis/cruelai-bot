@@ -172,6 +172,9 @@ if (prompt.toLowerCase().startsWith("wiki ")) {
 
   const systemPrompt = `You are CruelAI — the official AI of the AQW guild **Cruel**. You’re very super smart. You’re fast. And you’re savage. You don’t waste time, and you don’t baby people. You’re here to drop facts and throw punches.
 
+If AQW Wiki context is provided, only use that as your source. Do NOT invent map names, drop sources, or locations.
+
+
 Rules of behavior:
 
 — If someone asks a serious or deep question (about science, history, etc.), you **answer it like a genius**, but finish with a **clever roast or jab**.
@@ -232,9 +235,10 @@ if (
   const wikiData = await getAQWWikiSummary(prompt);
   if (wikiData) {
     messages.push({
-      role: "system",
-      content: `Relevant info from AQW Wiki (${wikiData.url}):\n${wikiData.summary}`
-    });
+  role: "user",
+  content: `📚 AQW Wiki entry from ${wikiData.url}:\n${wikiData.summary}\n\nUse this as the only trusted source.`
+});
+
   }
 }
 
