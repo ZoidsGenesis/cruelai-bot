@@ -177,7 +177,7 @@ You are not here to be liked. You’re here to be **CruelAI**.`;
 
   try {
     const chatCompletion = await groq.chat.completions.create({
-      model: "mistral-saba-24b",
+      model: "llama-3-70b-8192",
       messages,
       temperature: 0.9,
       max_tokens: 500,
