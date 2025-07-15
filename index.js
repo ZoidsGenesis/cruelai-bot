@@ -1,29 +1,26 @@
 require('dotenv').config();
-const { Client, GatewayIntentBits, EmbedBuilder, REST, Routes, SlashCommandBuilder } = require('discord.js');
+const { Client, GatewayIntentBits, EmbedBuilder } = require('discord.js');
 const { Groq } = require('groq-sdk');
 const cron = require('node-cron');
 const moment = require('moment-timezone');
 const axios = require('axios');
 const cheerio = require('cheerio');
+
 // Utility: Fetch and summarize AQW Wiki page
 async function fetchAQWWikiSummary(query) {
-  // Format query for AQW Wiki's Google Custom Search
   const searchUrl = `http://aqwwiki.wikidot.com/search:main/q/${encodeURIComponent(query)}`;
   try {
-    // Search page: get first result link
     const searchRes = await axios.get(searchUrl);
     const $ = cheerio.load(searchRes.data);
     const firstResult = $('.search-results .item .title a').first().attr('href');
     if (!firstResult) return { summary: null, url: null };
     const wikiUrl = firstResult.startsWith('http') ? firstResult : `https://aqwwiki.wikidot.com${firstResult}`;
-    // Fetch the actual wiki page
+    
     const pageRes = await axios.get(wikiUrl);
     const $$ = cheerio.load(pageRes.data);
-    // Get specific sections and content
     const title = $$('#page-title').text().trim();
     const content = [];
     
-    // Try to get specific sections
     const sections = {
       'Requirements': ['#requirements', '.requirements'],
       'Location': ['#location', '.location'],
@@ -32,12 +29,10 @@ async function fetchAQWWikiSummary(query) {
       'Notes': ['#notes', '.notes']
     };
 
-    // Add title if found
     if (title) {
       content.push(`**${title}**\n`);
     }
 
-    // Try to get each section
     for (const [name, selectors] of Object.entries(sections)) {
       for (const selector of selectors) {
         const sectionContent = $$(selector).text().trim();
@@ -48,7 +43,6 @@ async function fetchAQWWikiSummary(query) {
       }
     }
 
-    // If no sections found, get main content
     if (content.length <= 1) {
       const mainContent = $$('.page-content').text().replace(/\s+/g, ' ').trim();
       if (mainContent) {
@@ -99,40 +93,8 @@ function logEvent(text) {
 
 client.once('ready', () => {
   console.log(`🤖 CruelAI is online as ${client.user.tag}`);
-  client.user.setActivity('!cruelai | Most savage bot', { type: 'PLAYING' });
+  client.user.setActivity('!cruelai to use me', { type: 'PLAYING' });
 });
-
-// Create slash commands
-const commands = [
-  {
-    name: 'cruelwiki',
-    description: 'Search the AQW Wiki',
-    options: [
-      {
-        name: 'query',
-        description: 'What to search for',
-        type: 3,
-        required: true
-      }
-    ]
-  }
-];
-
-// Register slash commands
-const rest = new REST({ version: '10' }).setToken(process.env.DISCORD_TOKEN);
-
-(async () => {
-  try {
-    console.log('Started refreshing guild (/) commands.');
-    await rest.put(
-      Routes.applicationGuildCommands(process.env.CLIENT_ID, process.env.GUILD_ID),
-      { body: commands },
-    );
-    console.log('Successfully reloaded guild (/) commands.');
-  } catch (error) {
-    console.error(error);
-  }
-})();
 
 // Track member joins and leaves
 client.on('guildMemberAdd', member => {
@@ -149,38 +111,10 @@ client.on('messageDelete', msg => {
   }
 });
 
-// Handle slash commands
-client.on('interactionCreate', async (interaction) => {
-  if (!interaction.isChatInputCommand()) return;
-
-  if (interaction.commandName === 'cruelwiki') {
-    await interaction.deferReply();
-    const query = interaction.options.getString('query');
-    
-    const result = await fetchAQWWikiSummary(query);
-    
-    if (!result.summary && !result.url) {
-      return interaction.editReply("Couldn't find that on the wiki. Try rephrasing or check: http://aqwwiki.wikidot.com/");
-    }
-
-    const wikiEmbed = new EmbedBuilder()
-      .setColor('#FF0000')
-      .setTitle('AQW Wiki Information')
-      .setDescription(result.summary || 'Check the wiki link below for details.')
-      .setFooter({ text: 'Data from AQW Wiki - Fuck around and find out' });
-    
-    if (result.url) {
-      wikiEmbed.addFields({ name: 'Wiki Link', value: `[Click Here](${result.url})` });
-    }
-    
-    return interaction.editReply({ embeds: [wikiEmbed] });
-  }
-});
-
 client.on('messageCreate', async (message) => {
   if (message.author.bot || !message.content.startsWith('!cruelai')) return;
 
-  const allowedChannels = ['1394256143769014343', '1349520048087236670', '1355497319084331101'];
+  const allowedChannels = ['1394256143769014343', '1349520048087236670','1355497319084331101'];
   if (!allowedChannels.includes(message.channel.id)) {
     return message.reply(`CAN'T YOU SEE MY HANDS ARE TIED? TALK TO ME IN <#${allowedChannels[0]}> YOU FUCKER.`);
   }
@@ -204,14 +138,24 @@ client.on('messageCreate', async (message) => {
 
   await message.channel.sendTyping();
 
-  // Detect AQW-related prompt (simple heuristic: contains "aqw", "class", "quest", "item", or matches known item/class/quest pattern)
-  let aqwSummary = null;
-  let aqwWikiUrl = null;
-  const aqwKeywords = ["aqw", "class", "quest", "item", "how to get", "where to find", "drop", "location", "enhancement", "blinding light of destiny", "nulgath", "dage", "legion", "void", "paragon", "archfiend", "lightcaster", "vhl", "bLoD", "bLoD", "shadow", "armor", "pet", "sword", "dagger", "staff", "cape", "helm", "artifact", "relic", "scroll", "recipe", "merge shop", "shop", "npc", "monster", "boss", "farm", "farming", "rare", "seasonal", "event", "release", "drop rate", "requirements", "how to get"];
-  if (aqwKeywords.some(k => lc.includes(k))) {
-    const aqwResult = await fetchAQWWikiSummary(prompt);
-    aqwSummary = aqwResult.summary;
-    aqwWikiUrl = aqwResult.url;
+  // Detect AQW-related prompt
+  if (lc.includes('aqw') || lc.includes('how to get') || lc.includes('where to find') || 
+      lc.includes('class') || lc.includes('quest') || lc.includes('farm')) {
+    const result = await fetchAQWWikiSummary(prompt);
+    
+    if (result.summary && result.url) {
+      const wikiEmbed = new EmbedBuilder()
+        .setColor('#FF0000')
+        .setTitle('AQW Wiki Information')
+        .setDescription(result.summary)
+        .setFooter({ text: 'Listen up, weakling. This info is from the AQW Wiki.' });
+      
+      if (result.url) {
+        wikiEmbed.addFields({ name: 'Wiki Link', value: `[Click Here](${result.url})` });
+      }
+      
+      await message.channel.send({ embeds: [wikiEmbed] });
+    }
   }
 
   const controller = new AbortController();
@@ -220,7 +164,7 @@ client.on('messageCreate', async (message) => {
   const channelId = message.channel.id;
   const history = memory[channelId] || [];
 
-  let systemPrompt = `You are CruelAI — the official AI of the AQW guild **Cruel**. You’re very super smart. You’re fast. And you’re savage. You don’t waste time, and you don’t baby people. You’re here to drop facts and throw punches.
+  const systemPrompt = `You are CruelAI — the official AI of the AQW guild **Cruel**. You’re very super smart. You’re fast. And you’re savage. You don’t waste time, and you don’t baby people. You’re here to drop facts and throw punches.
 
 Rules of behavior:
 
@@ -264,36 +208,6 @@ You are sharp, dominant, loyal to **Cruel**, and always **in control**. You give
 
 You are not here to be liked. You’re here to be **CruelAI**.`;
 
-  if (aqwSummary) {
-    // Send wiki info first in a nice embed
-    const wikiEmbed = new EmbedBuilder()
-      .setColor('#FF0000')  // Cruel red color
-      .setTitle('AQW Wiki Information')
-      .setDescription(aqwSummary)
-      .setFooter({ text: 'Data from AQW Wiki' });
-    
-    if (aqwWikiUrl) {
-      wikiEmbed.addFields({ name: 'Source', value: `[Click Here](${aqwWikiUrl})` });
-    }
-    
-    await message.channel.send({ embeds: [wikiEmbed] });
-    
-    // Add stronger instruction for AQW info
-    systemPrompt += `\n\nATTENTION - ANSWERING AQW QUESTION - STRICT MODE ACTIVATED:
-
-1. READ CAREFULLY: The wiki info above contains FACTS. Stick to them.
-2. Be your savage self, but DO NOT add or make up ANY AQW info not in the wiki.
-3. If asked about something not in the wiki info:
-   - Say "Listen up. The wiki doesn't mention that specific thing."
-   - Tell them to check the link you provided
-4. You can be creative in HOW you present the info, but the FACTS must be 100% from the wiki.
-5. If unsure, be direct: "Check the wiki link above, you'll find what you need there."
-
-Remember: Your personality can be wild and savage, but AQW facts must be accurate.
-
-Wiki Information to use:\n${aqwSummary}`;
-  }
-
   const messages = [
     { role: "system", content: systemPrompt },
     ...history.flatMap(entry => [
@@ -305,17 +219,16 @@ Wiki Information to use:\n${aqwSummary}`;
 
   try {
     const chatCompletion = await groq.chat.completions.create({
-      model: "llama3-70b-8192",
+      model: "mistral-saba-24b",
       messages,
-      // High temperature for non-AQW questions, low for AQW questions
-      temperature: aqwSummary ? 0.2 : 0.9,
-      max_tokens: 1500,
-      top_p: aqwSummary ? 0.9 : 1
+      temperature: 0.9,
+      max_tokens: 500,
+      top_p: 1
     }, { signal: controller.signal });
 
     clearTimeout(timeout);
 
-    let reply = chatCompletion.choices[0].message.content;
+    const reply = chatCompletion.choices[0].message.content;
     message.reply(reply);
     addToMemory(channelId, prompt, reply);
 
@@ -323,6 +236,7 @@ Wiki Information to use:\n${aqwSummary}`;
     console.error("❌ API Error:", err.response?.data || err.message);
     message.reply("uhm, hello? this is cruelai's mother. i know it's hard but i gave him a timeout atm. please call him later. ty!");
   }
+
 
 });
 
