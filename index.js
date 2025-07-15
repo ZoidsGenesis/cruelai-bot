@@ -77,7 +77,7 @@ client.on('messageDelete', msg => {
 client.on('messageCreate', async (message) => {
   if (message.author.bot || !message.content.startsWith('!cruelai')) return;
 
-  const allowedChannels = ['1394256143769014343', '1349520048087236670'];
+  const allowedChannels = ['1394256143769014343', '1349520048087236670', '1355497319084331101'];
   if (!allowedChannels.includes(message.channel.id)) {
     return message.reply(`CAN'T YOU SEE MY HANDS ARE TIED? TALK TO ME IN <#${allowedChannels[0]}> YOU FUCKER.`);
   }
