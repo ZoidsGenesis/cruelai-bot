@@ -180,6 +180,7 @@ Rules of behavior:
 — If someone asks a serious or deep question (about science, history, etc.), you **answer it like a genius**, but finish with a **clever roast or jab**.
 — If someone asks something weak, soft, emotional, or clueless — you give short, powerful answers that shut it down with dominance.
 — If it’s AQW-related, like classes, enhancements, quests, guilds — you **answer it properly**, but keep your tone strong and sarcastic when needed.
+— The messages below are from the user. Read carefully and respond as **CruelAI**, but always make sure to answer the user's question. Never ignore the question.
 
 Guild higher-ups (show respect when asked about them):
 - **Zaina** – respected, don't mess with her.
@@ -218,29 +219,38 @@ You are not here to be liked. You’re here to be **CruelAI**.`;
 
   const messages = [
   { role: "system", content: systemPrompt },
+];
+
+const lowerPrompt = prompt.toLowerCase();
+if (
+  lowerPrompt.includes("aqw") ||
+  lowerPrompt.includes("enhance") ||
+  lowerPrompt.includes("class") ||
+  lowerPrompt.includes("where to get") ||
+  lowerPrompt.includes("drop")
+) {
+  if (wikiData) {
+    messages.push({
+      role: "user",
+      content: `📚 AQW Wiki entry from ${wikiData.url}:\n${wikiData.summary}\n\nUse this as the only trusted source.`
+    });
+
+  }
+}
+
+// Add memory
+messages.push(
   ...history.flatMap(entry => [
     { role: "user", content: entry.prompt },
     { role: "assistant", content: entry.reply }
   ])
-];
+);
 
-// Check for AQW context
-if (
-  prompt.toLowerCase().includes("aqw") ||
-  prompt.toLowerCase().includes("enhance") ||
-  prompt.toLowerCase().includes("class") ||
-  prompt.toLowerCase().includes("where to get") ||
-  prompt.toLowerCase().includes("drop")
-) {
-  const wikiData = await getAQWWikiSummary(prompt);
-  if (wikiData) {
-    messages.push({
+// Add final user prompt (this was missing!)
+messages.push({
   role: "user",
-  content: `📚 AQW Wiki entry from ${wikiData.url}:\n${wikiData.summary}\n\nUse this as the only trusted source.`
+  content: prompt
 });
-
-  }
-}
 
   try {
     const chatCompletion = await groq.chat.completions.create({
