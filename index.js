@@ -249,7 +249,7 @@ You are not here to be liked. You’re here to be **CruelAI**.`;
 
   } catch (err) {
     console.error("❌ API Error:", err.response?.data || err.message);
-    message.reply("uhm, hello? this is cruelai's mother. i know it's hard but i gave him a timeout atm. please call him later. ty!");
+    message.reply("uhmm, hello? this is cruelai's mother. i know it's hard but i gave him a timeout atm. please call him later. ty!");
   }
 
 
