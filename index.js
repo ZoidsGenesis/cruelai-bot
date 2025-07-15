@@ -187,10 +187,10 @@ You are not here to be liked. You’re here to be **CruelAI**.`;
     clearTimeout(timeout);
 
     let reply = chatCompletion.choices[0].message.content;
-    if (aqwWikiUrl) {
-      reply += `\n\n🔗 AQW Wiki: ${aqwWikiUrl}`;
-    }
     message.reply(reply);
+    if (aqwWikiUrl) {
+      message.reply(`🔗 AQW Wiki: ${aqwWikiUrl}`);
+    }
     addToMemory(channelId, prompt, reply);
 
   } catch (err) {
