@@ -118,7 +118,35 @@ client.on('messageDelete', msg => {
 });
 
 client.on('messageCreate', async (message) => {
-  if (message.author.bot || !message.content.startsWith('!cruelai')) return;
+  if (message.author.bot) return;
+  
+  // Handle AQW wiki command separately
+  if (message.content.startsWith('!aqw')) {
+    const query = message.content.replace('!aqw', '').trim();
+    if (!query) return message.reply('❗ Example: `!aqw void highlord` or `!aqw how to get nsod`');
+
+    await message.channel.sendTyping();
+    const result = await fetchAQWWikiSummary(query);
+    
+    if (!result.summary && !result.url) {
+      return message.reply("Couldn't find that on the wiki. Try rephrasing or check: http://aqwwiki.wikidot.com/");
+    }
+
+    const wikiEmbed = new EmbedBuilder()
+      .setColor('#FF0000')
+      .setTitle('AQW Wiki Information')
+      .setDescription(result.summary || 'Check the wiki link below for details.')
+      .setFooter({ text: 'Data from AQW Wiki - Fuck around and find out' });
+    
+    if (result.url) {
+      wikiEmbed.addFields({ name: 'Wiki Link', value: `[Click Here](${result.url})` });
+    }
+    
+    return message.channel.send({ embeds: [wikiEmbed] });
+  }
+
+  // Original AI chat command
+  if (!message.content.startsWith('!cruelai')) return;
 
   const allowedChannels = ['1394256143769014343', '1349520048087236670', '1355497319084331101'];
   if (!allowedChannels.includes(message.channel.id)) {
