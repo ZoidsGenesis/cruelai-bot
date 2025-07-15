@@ -102,30 +102,40 @@ client.on('messageDelete', msg => {
 });
 
 async function getAQWWikiSummary(prompt) {
-  const baseUrl = "https://aqwwiki.wikidot.com/";
-
-  // Extract likely item/topic from the user's prompt
-  const match = prompt.match(/(?:get|obtain|where.*|how to get)?\s*(.*sword.*|.*class.*|.*armor.*|.*blade.*|.*staff.*|.*spell.*|.*item.*|.*quest.*|.*badge.*)/i);
-  const query = match ? match[1].trim() : prompt;
-  const formattedQuery = query.toLowerCase().replace(/\s+/g, '-');
-  const url = `${baseUrl}${formattedQuery}`;
+  const baseSearchUrl = "http://aqwwiki.wikidot.com/search:site/q/";
+  const query = encodeURIComponent(prompt.trim());
+  const searchUrl = `${baseSearchUrl}${query}`;
 
   try {
-    const { data } = await axios.get(url);
-    const $ = cheerio.load(data);
+    const { data: searchHtml } = await axios.get(searchUrl);
+    const $search = cheerio.load(searchHtml);
+
+    // Find the first result link
+    const firstResultPath = $search('.search-results .item a').attr('href');
+    if (!firstResultPath) {
+      console.log("❌ No search results found.");
+      return null;
+    }
+
+    const wikiUrl = `http://aqwwiki.wikidot.com${firstResultPath}`;
+
+    // Now fetch the actual page
+    const { data: pageHtml } = await axios.get(wikiUrl);
+    const $page = cheerio.load(pageHtml);
+
     const content = $('.wiki-content-table').first().text().trim() ||
                     $('#page-content').text().trim();
 
     return {
-      url,
+      url: wikiUrl,
       summary: content.slice(0, 800)
     };
+
   } catch (err) {
-    console.error("❌ Failed to fetch wiki summary:", err.message);
+    console.error("❌ Failed to fetch AQW Wiki info:", err.message);
     return null;
   }
 }
-
 
 
 client.on('messageCreate', async (message) => {
