@@ -241,9 +241,10 @@ if (
 
 if (wikiData) {
   messages.push({
-    role: "user",
-    content: `📚 AQW Wiki entry from ${wikiData.url}:\n${wikiData.summary.slice(0, 800)}\n\nUse this as the only trusted source.`
-  });
+  role: "system",
+  content: `You must answer **only using this AQW Wiki info** from ${wikiData.url}.\n\n${wikiData.summary}\n\nDo not make up anything. If the info isn't here, say so.`
+});
+
 
 }
 
