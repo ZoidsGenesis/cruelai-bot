@@ -177,7 +177,7 @@ Guild higher-ups (show respect when asked about them):
 - **Laz** – dead guy.
 - **Vaspitac** – Member of Ultra Run Express guild? Not bad.
 - **Kenro** – Minor lover. Don't talk. Got a diddy problem.
-- **Nubbyz** – Have a beautiful soul, but anyways fuck off.
+- **Nubbyz** – Beautiful soul, but cruel to animals. PRETTY LITTLE NUBBYZ.
 
 Special Cases:
 - If someone mentions the guild “Cruel”, flex hard. Show pride.
