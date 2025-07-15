@@ -1,5 +1,5 @@
 require('dotenv').config();
-const { Client, GatewayIntentBits, EmbedBuilder } = require('discord.js');
+const { Client, GatewayIntentBits, EmbedBuilder, REST, Routes, SlashCommandBuilder } = require('discord.js');
 const { Groq } = require('groq-sdk');
 const cron = require('node-cron');
 const moment = require('moment-timezone');
@@ -99,8 +99,35 @@ function logEvent(text) {
 
 client.once('ready', () => {
   console.log(`🤖 CruelAI is online as ${client.user.tag}`);
-  client.user.setActivity('!cruelai to use me', { type: 'PLAYING' });
+  client.user.setActivity('!cruelai | Most savage bot', { type: 'PLAYING' });
 });
+
+// Create slash commands
+const commands = [
+  new SlashCommandBuilder()
+    .setName('cruelwiki')
+    .setDescription('Search the AQW Wiki')
+    .addStringOption(option =>
+      option.setName('query')
+        .setDescription('What to search for')
+        .setRequired(true))
+];
+
+// Register slash commands
+const rest = new REST({ version: '10' }).setToken(process.env.DISCORD_TOKEN);
+
+(async () => {
+  try {
+    console.log('Started refreshing application (/) commands.');
+    await rest.put(
+      Routes.applicationCommands(process.env.CLIENT_ID),
+      { body: commands },
+    );
+    console.log('Successfully reloaded application (/) commands.');
+  } catch (error) {
+    console.error(error);
+  }
+})();
 
 // Track member joins and leaves
 client.on('guildMemberAdd', member => {
@@ -117,19 +144,18 @@ client.on('messageDelete', msg => {
   }
 });
 
-client.on('messageCreate', async (message) => {
-  if (message.author.bot) return;
-  
-  // Handle AQW wiki command separately
-  if (message.content.startsWith('!aqw')) {
-    const query = message.content.replace('!aqw', '').trim();
-    if (!query) return message.reply('❗ Example: `!aqw void highlord` or `!aqw how to get nsod`');
+// Handle slash commands
+client.on('interactionCreate', async (interaction) => {
+  if (!interaction.isChatInputCommand()) return;
 
-    await message.channel.sendTyping();
+  if (interaction.commandName === 'cruelwiki') {
+    await interaction.deferReply();
+    const query = interaction.options.getString('query');
+    
     const result = await fetchAQWWikiSummary(query);
     
     if (!result.summary && !result.url) {
-      return message.reply("Couldn't find that on the wiki. Try rephrasing or check: http://aqwwiki.wikidot.com/");
+      return interaction.editReply("Couldn't find that on the wiki. Try rephrasing or check: http://aqwwiki.wikidot.com/");
     }
 
     const wikiEmbed = new EmbedBuilder()
@@ -142,11 +168,12 @@ client.on('messageCreate', async (message) => {
       wikiEmbed.addFields({ name: 'Wiki Link', value: `[Click Here](${result.url})` });
     }
     
-    return message.channel.send({ embeds: [wikiEmbed] });
+    return interaction.editReply({ embeds: [wikiEmbed] });
   }
+});
 
-  // Original AI chat command
-  if (!message.content.startsWith('!cruelai')) return;
+client.on('messageCreate', async (message) => {
+  if (message.author.bot || !message.content.startsWith('!cruelai')) return;
 
   const allowedChannels = ['1394256143769014343', '1349520048087236670', '1355497319084331101'];
   if (!allowedChannels.includes(message.channel.id)) {
