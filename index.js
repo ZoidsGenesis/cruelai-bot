@@ -101,8 +101,12 @@ client.on('messageDelete', msg => {
   }
 });
 
-async function getAQWWikiSummary(query) {
+async function getAQWWikiSummary(prompt) {
   const baseUrl = "https://aqwwiki.wikidot.com/";
+
+  // Extract likely item/topic from the user's prompt
+  const match = prompt.match(/(?:get|obtain|where.*|how to get)?\s*(.*sword.*|.*class.*|.*armor.*|.*blade.*|.*staff.*|.*spell.*|.*item.*|.*quest.*|.*badge.*)/i);
+  const query = match ? match[1].trim() : prompt;
   const formattedQuery = query.toLowerCase().replace(/\s+/g, '-');
   const url = `${baseUrl}${formattedQuery}`;
 
@@ -114,13 +118,14 @@ async function getAQWWikiSummary(query) {
 
     return {
       url,
-      summary: content.slice(0, 800) // Limit to 800 characters
+      summary: content.slice(0, 800)
     };
   } catch (err) {
     console.error("❌ Failed to fetch wiki summary:", err.message);
     return null;
   }
 }
+
 
 
 client.on('messageCreate', async (message) => {
