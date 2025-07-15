@@ -232,23 +232,18 @@ if (
   const wikiData = await getAQWWikiSummary(prompt);
   if (wikiData) {
     messages.push({
-      role: "user",
-      content: `Here is relevant AQW Wiki info from [${wikiData.url}]:\n${wikiData.summary}`
+      role: "system",
+      content: `Relevant info from AQW Wiki (${wikiData.url}):\n${wikiData.summary}`
     });
   }
 }
 
-// Finally, push the actual user question
-messages.push({ role: "user", content: prompt });
-
-
-
   try {
     const chatCompletion = await groq.chat.completions.create({
-      model: "mistral-saba-24b",
+      model: "llama3-70b-8192",
       messages,
       temperature: 0.9,
-      max_tokens: 500,
+      max_tokens: 1024,
       top_p: 1
     }, { signal: controller.signal });
 
