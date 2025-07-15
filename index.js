@@ -101,6 +101,27 @@ client.on('messageDelete', msg => {
   }
 });
 
+async function getAQWWikiSummary(query) {
+  const baseUrl = "https://aqwwiki.wikidot.com/";
+  const formattedQuery = query.toLowerCase().replace(/\s+/g, '-');
+  const url = `${baseUrl}${formattedQuery}`;
+
+  try {
+    const { data } = await axios.get(url);
+    const $ = cheerio.load(data);
+    const content = $('.wiki-content-table').first().text().trim() ||
+                    $('#page-content').text().trim();
+
+    return {
+      url,
+      summary: content.slice(0, 800) // Limit to 800 characters
+    };
+  } catch (err) {
+    console.error("❌ Failed to fetch wiki summary:", err.message);
+    return null;
+  }
+}
+
 
 client.on('messageCreate', async (message) => {
   if (message.author.bot || !message.content.startsWith('!cruelai')) return;
@@ -192,14 +213,23 @@ You are sharp, dominant, loyal to **Cruel**, and always **in control**. You give
 
 You are not here to be liked. You’re here to be **CruelAI**.`;
 
-  const messages = [
-    { role: "system", content: systemPrompt },
-    ...history.flatMap(entry => [
-      { role: "user", content: entry.prompt },
-      { role: "assistant", content: entry.reply }
-    ]),
-    { role: "user", content: prompt }
-  ];
+  let contextInjection = '';
+if (prompt.toLowerCase().includes("aqw") || prompt.toLowerCase().includes("enhance") || prompt.toLowerCase().includes("class") || prompt.toLowerCase().includes("where to get") || prompt.toLowerCase().includes("drop")) {
+  const wikiData = await getAQWWikiSummary(prompt);
+  if (wikiData) {
+    contextInjection = `\n\n[Context from AQW Wiki: "${wikiData.url}"]\n${wikiData.summary}`;
+  }
+}
+
+const messages = [
+  { role: "system", content: systemPrompt + contextInjection },
+  ...history.flatMap(entry => [
+    { role: "user", content: entry.prompt },
+    { role: "assistant", content: entry.reply }
+  ]),
+  { role: "user", content: prompt }
+];
+
 
   try {
     const chatCompletion = await groq.chat.completions.create({
