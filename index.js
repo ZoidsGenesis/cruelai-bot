@@ -8,13 +8,23 @@ const cheerio = require('cheerio');
 
 // Utility: Fetch and summarize AQW Wiki page
 async function fetchAQWWikiSummary(query) {
-  const searchUrl = `http://aqwwiki.wikidot.com/search:main/q/${encodeURIComponent(query)}`;
   try {
-    const searchRes = await axios.get(searchUrl);
-    const $ = cheerio.load(searchRes.data);
-    const firstResult = $('.search-results .item .title a').first().attr('href');
-    if (!firstResult) return { summary: null, url: null };
-    const wikiUrl = firstResult.startsWith('http') ? firstResult : `https://aqwwiki.wikidot.com${firstResult}`;
+    // Try direct URL first for common items
+    let wikiUrl;
+    const cleanQuery = query.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+    if (query.toLowerCase().includes('legion revenant')) {
+      wikiUrl = 'http://aqwwiki.wikidot.com/legion-revenant-class';
+    } else if (query.toLowerCase().includes('void highlord')) {
+      wikiUrl = 'http://aqwwiki.wikidot.com/void-highlord-class';
+    } else {
+      // Fall back to search if not a known direct URL
+      const searchUrl = `http://aqwwiki.wikidot.com/search:main/q/${encodeURIComponent(query)}`;
+      const searchRes = await axios.get(searchUrl);
+      const $ = cheerio.load(searchRes.data);
+      const firstResult = $('.search-results .item .title a').first().attr('href');
+      if (!firstResult) return { summary: null, url: null };
+      wikiUrl = firstResult.startsWith('http') ? firstResult : `https://aqwwiki.wikidot.com${firstResult}`;
+    }
     
     const pageRes = await axios.get(wikiUrl);
     const $$ = cheerio.load(pageRes.data);
