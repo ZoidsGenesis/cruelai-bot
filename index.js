@@ -14,17 +14,18 @@ async function fetchAQWWikiSummary(query) {
     const searchRes = await axios.get(searchUrl);
     const $ = cheerio.load(searchRes.data);
     const firstResult = $('.search-results .title a').attr('href');
-    if (!firstResult) return null;
+    if (!firstResult) return { summary: null, url: null };
+    const wikiUrl = firstResult.startsWith('http') ? firstResult : `https://aqwwiki.wikidot.com${firstResult}`;
     // Fetch the actual wiki page
-    const pageRes = await axios.get(firstResult.startsWith('http') ? firstResult : `https://aqwwiki.wikidot.com${firstResult}`);
+    const pageRes = await axios.get(wikiUrl);
     const $$ = cheerio.load(pageRes.data);
     // Get main content (summary, requirements, etc.)
     let summary = $$('.page-content').text().replace(/\s+/g, ' ').trim();
     if (summary.length > 800) summary = summary.slice(0, 800) + '...';
-    return summary || null;
+    return { summary: summary || null, url: wikiUrl };
   } catch (err) {
     console.error('AQW Wiki fetch error:', err.message);
-    return null;
+    return { summary: null, url: null };
   }
 }
 
@@ -103,9 +104,12 @@ client.on('messageCreate', async (message) => {
 
   // Detect AQW-related prompt (simple heuristic: contains "aqw", "class", "quest", "item", or matches known item/class/quest pattern)
   let aqwSummary = null;
+  let aqwWikiUrl = null;
   const aqwKeywords = ["aqw", "class", "quest", "item", "how to get", "where to find", "drop", "location", "enhancement", "blinding light of destiny", "nulgath", "dage", "legion", "void", "paragon", "archfiend", "lightcaster", "vhl", "bLoD", "bLoD", "shadow", "armor", "pet", "sword", "dagger", "staff", "cape", "helm", "artifact", "relic", "scroll", "recipe", "merge shop", "shop", "npc", "monster", "boss", "farm", "farming", "rare", "seasonal", "event", "release", "drop rate", "requirements", "how to get"];
   if (aqwKeywords.some(k => lc.includes(k))) {
-    aqwSummary = await fetchAQWWikiSummary(prompt);
+    const aqwResult = await fetchAQWWikiSummary(prompt);
+    aqwSummary = aqwResult.summary;
+    aqwWikiUrl = aqwResult.url;
   }
 
   const controller = new AbortController();
@@ -182,7 +186,10 @@ You are not here to be liked. You’re here to be **CruelAI**.`;
 
     clearTimeout(timeout);
 
-    const reply = chatCompletion.choices[0].message.content;
+    let reply = chatCompletion.choices[0].message.content;
+    if (aqwWikiUrl) {
+      reply += `\n\n🔗 AQW Wiki: ${aqwWikiUrl}`;
+    }
     message.reply(reply);
     addToMemory(channelId, prompt, reply);
 
