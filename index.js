@@ -168,7 +168,7 @@ client.on('messageCreate', async (message) => {
       return;
     } else {
       // If wiki search failed, inform the user instead of falling back to AI
-      return message.reply("Listen here, I couldn't find that on the AQW Wiki. Either you typed it wrong or it doesn't exist. Try being more specific, or check the wiki yourself: http://aqwwiki.wikidot.com/");
+      return message.reply("Listen dickhead, I couldn't find that on the AQW Wiki. Either you typed it wrong or you're just dumb as fuck. Try being more specific, or check the wiki yourself: http://aqwwiki.wikidot.com/");
     }
   }
 
