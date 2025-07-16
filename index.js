@@ -130,6 +130,12 @@ function containsBannedWords(content) {
 }
 
 client.on('messageCreate', async (message) => {
+  // ✅ Prevent AutoMod from detecting its own messages
+  if (message.author.id === client.user.id) return;
+
+  // ✅ Skip other bots too if you want
+  if (message.author.bot || message.webhookId) return;
+
   // AutoMod: Banned word detection
   const detectedWord = containsBannedWords(message.content);
   if (detectedWord) {
@@ -150,8 +156,9 @@ client.on('messageCreate', async (message) => {
     } catch (err) {
       console.error('❌ AutoMod failed to handle banned word:', err.message);
     }
-    return; // Stop further processing of the message
+    return;
   }
+
 
   if (message.author.bot || !message.content.startsWith('!cruelai')) return;
 
