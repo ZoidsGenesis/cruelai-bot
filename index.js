@@ -89,7 +89,7 @@ const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
 const memory = {}; // Per-channel memory
 const eventLog = []; // Tracks server events
-const bannedWords = ['nigger', 'faggot', 'niga', 'rape', 'childporn', 'nigga', 'niga', 'test']; // <- you can add more here
+const bannedWords = ['nigger', 'faggot', 'niga', 'rape', 'childporn', 'nigga', 'niga', 'f*ggot', 'denji']; // <- you can add more here
 const modLogChannelId = '1347501837049401437'; // replace with actual log channel ID
 
 function addToMemory(channelId, userPrompt, botReply) {
