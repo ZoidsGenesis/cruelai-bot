@@ -158,29 +158,25 @@ client.on('messageCreate', async (message) => {
 
 const isAQWRelated = aqwKeywords.some(pattern => pattern.test(prompt));
 if (isAQWRelated) {
-  // your fetchAQWWikiSummary logic
-}
+  const result = await fetchAQWWikiSummary(prompt);
 
-    const result = await fetchAQWWikiSummary(prompt);
-    
-    if (result.summary && result.url) {
-      const wikiEmbed = new EmbedBuilder()
-        .setColor('#FF0000')
-        .setTitle('AQW Wiki Information')
-        .setDescription(result.summary)
-        .setFooter({ text: 'Listen up, weakling. This info is from the AQW Wiki.' });
-      
-      if (result.url) {
-        wikiEmbed.addFields({ name: 'Wiki Link', value: `[Click Here](${result.url})` });
-      }
-      
-      await message.channel.send({ embeds: [wikiEmbed] });
-      return;
-    } else {
-      // If wiki search failed, inform the user instead of falling back to AI
-      return message.reply("Listen dickhead, I couldn't find that on the AQW Wiki. Either you typed it wrong or you're just dumb as fuck. Try being more specific, or check the wiki yourself: http://aqwwiki.wikidot.com/");
+  if (result.summary && result.url) {
+    const wikiEmbed = new EmbedBuilder()
+      .setColor('#FF0000')
+      .setTitle('AQW Wiki Information')
+      .setDescription(result.summary)
+      .setFooter({ text: 'Listen up, weakling. This info is from the AQW Wiki.' });
+
+    if (result.url) {
+      wikiEmbed.addFields({ name: 'Wiki Link', value: `[Click Here](${result.url})` });
     }
+
+    await message.channel.send({ embeds: [wikiEmbed] });
+    return;
+  } else {
+    return message.reply("Listen dickhead, I couldn't find that on the AQW Wiki. Either you typed it wrong or you're just dumb as fuck. Try being more specific, or check the wiki yourself: http://aqwwiki.wikidot.com/");
   }
+}
 
   // Continue with AI response for non-AQW queries
   const controller = new AbortController();
