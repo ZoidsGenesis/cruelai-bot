@@ -149,8 +149,18 @@ client.on('messageCreate', async (message) => {
   await message.channel.sendTyping();
 
   // Detect AQW-related prompt
-  if (lc.includes('aqw') || lc.includes('how to get') || lc.includes('where to find') || 
-      lc.includes('class') || lc.includes('quest') || lc.includes('farm')) {
+  const aqwKeywords = [
+  /aqw/i,
+  /how to get/i,
+  /where (to )?(find|get)/i,
+  /\b(class|quest|drop|enhance|armor|weapon|farm)\b/i
+];
+
+const isAQWRelated = aqwKeywords.some(pattern => pattern.test(prompt));
+if (isAQWRelated) {
+  // your fetchAQWWikiSummary logic
+}
+
     const result = await fetchAQWWikiSummary(prompt);
     
     if (result.summary && result.url) {
