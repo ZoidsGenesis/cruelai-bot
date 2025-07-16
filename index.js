@@ -262,6 +262,7 @@ Guild higher-ups (show respect when asked about them):
 - **Laz** – dead guy.
 - **Vaspitac** – Member of Ultra Run Express guild? Not bad.
 - **Kenro** – Minor lover. Don't talk. Got a diddy problem.
+- **Fligger** - Member of Goat guild. Active in Cruel server.
 
 Special Cases:
 - If someone mentions the guild “Cruel”, flex hard. Show pride.
