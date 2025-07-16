@@ -148,7 +148,7 @@ client.on('messageCreate', async (message) => {
       // Log it to mod channel
       const logChannel = client.channels.cache.get(modLogChannelId);
       if (logChannel) {
-        logChannel.send(`🚨 **Banned Word Detected**\nUser: <@${message.author.id}> (${message.author.tag})\nWord: \`${detectedWord}\`\nChannel: <#${message.channel.id}>`);
+        logChannel.send(`🚨 **Banned Word Detected**\nUser: ${message.author.tag} (ID: ${message.author.id})\nWord: \`${detectedWord}\`\nChannel: <#${message.channel.id}>`);
       }
 
       // Log it to memory
