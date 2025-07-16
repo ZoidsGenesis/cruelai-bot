@@ -89,6 +89,8 @@ const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
 const memory = {}; // Per-channel memory
 const eventLog = []; // Tracks server events
+const bannedWords = ['nigger', 'faggot', 'niga', 'rape', 'childporn', 'nigga', 'niga', 'test']; // <- you can add more here
+const modLogChannelId = '1347501837049401437'; // replace with actual log channel ID
 
 function addToMemory(channelId, userPrompt, botReply) {
   if (!memory[channelId]) memory[channelId] = [];
@@ -121,7 +123,36 @@ client.on('messageDelete', msg => {
   }
 });
 
+function containsBannedWords(content) {
+  return bannedWords.find(word =>
+    new RegExp(`\\b${word}\\b`, 'i').test(content)
+  );
+}
+
 client.on('messageCreate', async (message) => {
+  // AutoMod: Banned word detection
+  const detectedWord = containsBannedWords(message.content);
+  if (detectedWord) {
+    try {
+      await message.delete();
+
+      // Roast the offender
+      await message.channel.send(`<@${message.author.id}> Watch your fucking mouth.`);
+
+      // Log it to mod channel
+      const logChannel = client.channels.cache.get(modLogChannelId);
+      if (logChannel) {
+        logChannel.send(`🚨 **Banned Word Detected**\nUser: <@${message.author.id}> (${message.author.tag})\nWord: \`${detectedWord}\`\nChannel: <#${message.channel.id}>`);
+      }
+
+      // Log it to memory
+      logEvent(`BANNED WORD: ${message.author.tag} said "${detectedWord}" in #${message.channel.name}`);
+    } catch (err) {
+      console.error('❌ AutoMod failed to handle banned word:', err.message);
+    }
+    return; // Stop further processing of the message
+  }
+
   if (message.author.bot || !message.content.startsWith('!cruelai')) return;
 
   const allowedChannels = ['1394256143769014343', '1349520048087236670','1355497319084331101'];
