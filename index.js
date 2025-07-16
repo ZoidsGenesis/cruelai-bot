@@ -81,7 +81,8 @@ const client = new Client({
     GatewayIntentBits.Guilds,
     GatewayIntentBits.GuildMessages,
     GatewayIntentBits.MessageContent,
-    GatewayIntentBits.GuildMembers
+    GatewayIntentBits.GuildMembers,
+    GatewayIntentBits.GuildPresences
   ]
 });
 
@@ -103,9 +104,16 @@ function logEvent(text) {
   if (eventLog.length > 20) eventLog.shift(); // limit to 20 entries
 }
 
-client.once('ready', () => {
+client.once('ready', async () => {
   console.log(`🤖 CruelAI is online as ${client.user.tag}`);
-  client.user.setActivity('!cruelai to use me', { type: 'PLAYING' });
+  try {
+    await client.user.setPresence({
+      activities: [{ name: '!cruelai to use me', type: 0 }],
+      status: 'online',
+    });
+  } catch (err) {
+    console.error('❌ Failed to set presence:', err.message);
+  }
 });
 
 // Track member joins and leaves
