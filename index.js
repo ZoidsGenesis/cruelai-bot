@@ -9,28 +9,26 @@ const cheerio = require('cheerio');
 // Utility: Fetch and summarize AQW Wiki page
 async function fetchAQWWikiSummary(query) {
   try {
-    // Try direct URL first for common items
-    let wikiUrl;
-    const cleanQuery = query.toLowerCase().replace(/[^a-z0-9]+/g, '-');
-    if (query.toLowerCase().includes('legion revenant')) {
-      wikiUrl = 'http://aqwwiki.wikidot.com/legion-revenant-class';
-    } else if (query.toLowerCase().includes('void highlord')) {
-      wikiUrl = 'http://aqwwiki.wikidot.com/void-highlord-class';
-    } else {
-      // Fall back to search if not a known direct URL
-      const searchUrl = `http://aqwwiki.wikidot.com/search:main/q/${encodeURIComponent(query)}`;
-      const searchRes = await axios.get(searchUrl);
-      const $ = cheerio.load(searchRes.data);
-      const firstResult = $('.search-results .item .title a').first().attr('href');
-      if (!firstResult) return { summary: null, url: null };
-      wikiUrl = firstResult.startsWith('http') ? firstResult : `https://aqwwiki.wikidot.com${firstResult}`;
-    }
-    
+    // Convert query into slug format
+    const formattedSlug = query.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+
+    // Optional hardcoded map for known redirects
+    const knownPages = {
+      "legion-revenant": "legion-revenant-class",
+      "void-highlord": "void-highlord-class",
+      "shadow-reaper-of-doom": "shadow-reaper-of-doom",
+    };
+
+    const slug = knownPages[formattedSlug] || formattedSlug;
+    const wikiUrl = `http://aqwwiki.wikidot.com/${slug}`;
+
+    // Try to fetch the wiki page directly
     const pageRes = await axios.get(wikiUrl);
-    const $$ = cheerio.load(pageRes.data);
-    const title = $$('#page-title').text().trim();
+    const $ = cheerio.load(pageRes.data);
+
+    const title = $('#page-title').text().trim();
     const content = [];
-    
+
     const sections = {
       'Requirements': ['#requirements', '.requirements'],
       'Location': ['#location', '.location'],
@@ -39,13 +37,11 @@ async function fetchAQWWikiSummary(query) {
       'Notes': ['#notes', '.notes']
     };
 
-    if (title) {
-      content.push(`**${title}**\n`);
-    }
+    if (title) content.push(`**${title}**\n`);
 
     for (const [name, selectors] of Object.entries(sections)) {
       for (const selector of selectors) {
-        const sectionContent = $$(selector).text().trim();
+        const sectionContent = $(selector).text().trim();
         if (sectionContent) {
           content.push(`**${name}:**\n${sectionContent}`);
           break;
@@ -54,24 +50,25 @@ async function fetchAQWWikiSummary(query) {
     }
 
     if (content.length <= 1) {
-      const mainContent = $$('.page-content').text().replace(/\s+/g, ' ').trim();
-      if (mainContent) {
-        content.push(mainContent);
-      }
+      const mainContent = $('.page-content').text().replace(/\s+/g, ' ').trim();
+      if (mainContent) content.push(mainContent);
     }
 
     let summary = content.join('\n\n');
     if (summary.length > 1000) {
       summary = summary.slice(0, 1000) + '...\n\nCheck the wiki link below for complete information.';
     }
-    
-    return { 
+
+    return {
       summary: summary || "No detailed information found. Please check the wiki link for more details.",
-      url: wikiUrl 
+      url: wikiUrl
     };
   } catch (err) {
     console.error('AQW Wiki fetch error:', err.message);
-    return { summary: null, url: null };
+    return {
+      summary: null,
+      url: `http://aqwwiki.wikidot.com/search:main/q/${encodeURIComponent(query)}`
+    };
   }
 }
 
