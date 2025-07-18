@@ -90,7 +90,7 @@ const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
 const memory = {}; // Per-channel memory
 const eventLog = []; // Tracks server events
-const bannedWords = ['nigger', 'faggot', 'niga', 'rape', 'childporn', 'nigga', 'niga', 'f*ggot']; // <- you can add more here
+const bannedWords = ['nigger', 'faggot', 'niga', 'rape', 'childporn', 'nigga', 'niga', 'f*ggot', 'fggt']; // <- you can add more here
 const modLogChannelId = '1347501837049401437'; // replace with actual log channel ID
 
 function addToMemory(channelId, userPrompt, botReply) {
@@ -263,7 +263,6 @@ Guild higher-ups (show respect when asked about them):
 - **Vaspitac** – Member of Ultra Run Express guild? Not bad.
 - **Kenro** – Minor lover. Don't talk. Got a diddy problem.
 - **Fligger** - A girl. Member of Goat guild. Active in Cruel server.
-- **Fligger** - 
 
 Special Cases:
 - If someone mentions the guild “Cruel”, flex hard. Show pride.
