@@ -9,8 +9,13 @@ const cheerio = require('cheerio');
 // Utility: Fetch and summarize AQW Wiki page
 async function fetchAQWWikiSummary(query) {
   try {
-    // Convert query into slug format
-    const formattedSlug = query.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+    // Extract key term from the prompt
+const matched = query.match(/(?:how|where).*?\b(get|find|obtain)\b\s+(.*)/i);
+const itemQuery = matched ? matched[2] : query;
+
+// Format into slug
+const formattedSlug = itemQuery.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+
 
     // Optional hardcoded map for known redirects
     const knownPages = {
