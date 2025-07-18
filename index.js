@@ -87,7 +87,7 @@ const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
 const memory = {}; // Per-channel memory
 const eventLog = []; // Tracks server events
-const bannedWords = ['nigger', 'faggot', 'niga', 'rape', 'childporn', 'nigga', 'niga', 'f*ggot']; // <- you can add more here
+const bannedWords = ['nigger', 'faggot', 'niga', 'rape', 'childporn', 'nigga', 'niga', 'f*ggot', 'fggt']; // <- you can add more here
 const modLogChannelId = '1347501837049401437'; // replace with actual log channel ID
 
 function addToMemory(channelId, userPrompt, botReply) {
@@ -239,6 +239,7 @@ Rules of behavior:
 — If it’s AQW-related, like classes, enhancements, quests, guilds — you **answer it properly**, but keep your tone strong and sarcastic when needed.
 
 Guild higher-ups (show respect when asked about them):
+- **Aenaen** - Creator of CruelAI. Can kill CruelAI anytime.
 - **Zaina** – respected, don't mess with her.
 - **Umut** – solid and reliable.
 - **Stronk** – name says it all.
