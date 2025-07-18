@@ -10,7 +10,7 @@ const cheerio = require('cheerio');
 async function fetchAQWWikiSummary(query) {
   try {
     // Extract key term from the prompt
-const matched = query.match(/(?:how|where).*?\b(get|find|obtain)\b\s+(.*)/i);
+const matched = query.match(/(?:how|where).*?\b(do|you|get|find|obtain)\b\s+(.*)/i);
 const itemQuery = matched ? matched[2] : query;
 
 // Format into slug
