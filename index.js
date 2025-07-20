@@ -10,7 +10,7 @@ const cheerio = require('cheerio');
 async function fetchAQWWikiSummary(query) {
   try {
     // Extract key term from the prompt
-const matched = query.match(/(?:how|where).*?\b(do|you|get|find|obtain)\b\s+(.*)/i);
+const matched = query.match(/(?:how|where).*?\b(get|find|obtain)\b\s+(.*)/i);
 const itemQuery = matched ? matched[2] : query;
 
 // Format into slug
@@ -139,6 +139,10 @@ function containsBannedWords(content) {
   );
 }
 
+const fs = require('fs');
+const enhancementData = JSON.parse(fs.readFileSync('./enhancementData.json', 'utf8'));
+
+
 client.on('messageCreate', async (message) => {
   // ✅ Prevent AutoMod from detecting its own messages
   if (message.author.id === client.user.id) return;
@@ -233,6 +237,16 @@ if (isAQWRelated) {
   const channelId = message.channel.id;
   const history = memory[channelId] || [];
 
+  // Optional enhancement info injection
+let enhancementNote = '';
+for (const className in enhancementData) {
+  if (prompt.toLowerCase().includes(className.toLowerCase())) {
+    const enh = enhancementData[className];
+    enhancementNote = `\n\n[NOTE FOR AI]: The class "${className}" has the following recommended enhancements:\nPurpose: ${enh.purpose},\nClass: ${enh.class},\nWeapon: ${enh.weapon},\nHelm: ${enh.helm},\nCape: ${enh.cape}.\nInclude this naturally if it's relevant.`;
+    break;
+  }
+}
+
   const systemPrompt = `You are CruelAI — the official AI of the AQW guild **Cruel**. You’re very super smart. You’re fast. And you’re savage. You don’t waste time, and you don’t baby people. You curse. You roast. You never repeat yourself like a weak chatbot. You’re here to dominate with facts and humiliate with style.
 
 Rules of behavior:
@@ -290,7 +304,8 @@ You are not here to be liked. You’re here to be **CruelAI**.`;
       { role: "user", content: entry.prompt },
       { role: "assistant", content: entry.reply }
     ]),
-    { role: "user", content: prompt }
+    { role: "user", content: prompt + enhancementNote }
+
   ];
 
   try {
