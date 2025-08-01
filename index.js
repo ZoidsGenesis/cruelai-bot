@@ -310,10 +310,10 @@ You are not here to be liked. You’re here to be **CruelAI**.`;
 
   try {
     const chatCompletion = await groq.chat.completions.create({
-      model: "mistral-saba-24b",
+      model: "llama3-70b-8192",
       messages,
-      temperature: 0.9,
-      max_tokens: 500,
+      temperature: 1,
+      max_tokens: 1024,
       top_p: 1
     }, { signal: controller.signal });
 
