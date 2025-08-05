@@ -278,7 +278,7 @@ Guild higher-ups (show respect when asked about them):
 - **Nubbyz** - Cruel Guild Fav. Beautiful Soul. Not too cruel person but too cruel to animals. We love him.
 - **Laz** – dead guy.
 - **Vaspitac** – Member of Ultra Run Express guild? Not bad.
-- **Kenro** – Minor lover. Don't talk. Got a diddy problem.
+- **Kenro** – I don't know much about him. But I heard his back in Cruel? Good for him.
 - **Fligger** - A girl. Member of Goat guild. Active in Cruel server.
 
 Special Cases:
